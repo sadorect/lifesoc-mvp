@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-void:    #08090e;
+    --bg-base:    #0d1117;
+    --bg-surface: #161b22;
+    --bg-raised:  #21262d;
+    --border:     #30363d;
+    --border-hi:  #444c56;
+    --text-1:     #e6edf3;
+    --text-2:     #8b949e;
+    --text-3:     #6e7681;
+    --blue:       #388bfd;
+    --blue-dim:   #1f3a6e;
+    --green:      #3fb950;
+    --green-dim:  #1a3a28;
+    --yellow:     #d29922;
+    --yellow-dim: #3d2e0a;
+    --red:        #f85149;
+    --red-dim:    #3d1616;
+    --orange:     #f0883e;
+    --orange-dim: #3d2210;
+    --purple:     #bc8cff;
+    --purple-dim: #2c1f5e;
+    --mono:       'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    background: var(--bg-base);
+    color: var(--text-1);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  input, textarea, select {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 15px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--blue); }
+  textarea { resize: none; }
+
+  label { font-size: 13px; color: var(--text-2); font-weight: 500; display: block; margin-bottom: 4px; }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+}
+
+@layer components {
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    border: none; cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    user-select: none; -webkit-user-select: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-primary  { background: var(--blue);    color: #fff; }
+  .btn-ghost    { background: var(--bg-raised); color: var(--text-1); border: 1px solid var(--border); }
+  .btn-danger   { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-dim); }
+  .btn-full     { width: 100%; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .badge-critical { background: var(--red-dim);    color: var(--red); }
+  .badge-high     { background: var(--orange-dim); color: var(--orange); }
+  .badge-medium   { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-low      { background: var(--blue-dim);   color: var(--blue); }
+  .badge-managed  { background: var(--green-dim);  color: var(--green); }
+  .badge-unmanaged { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-denial   { background: var(--red-dim);    color: var(--red); }
+
+  .section-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px;
+  }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--bg-raised);
+    color: var(--text-2); cursor: pointer; transition: all 0.15s;
+    user-select: none;
+  }
+  .chip.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+
+  .posture-ring {
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+
+  .bottom-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
+}
