@@ -1,7 +1,5 @@
-const BASE = import.meta.env.DEV ? 'http://localhost:3000' : ''
-
 export async function chatWithAnalyst(messages) {
-  const res = await fetch(`${BASE}/api/chat`, {
+  const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages })
@@ -12,7 +10,7 @@ export async function chatWithAnalyst(messages) {
 }
 
 export async function runIoCscan(input) {
-  const res = await fetch(`${BASE}/api/scan`, {
+  const res = await fetch('/api/scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ input })

@@ -1,0 +1,11 @@
+.vercel
+node_modules
+dist
+.env.local
+.env*.local
+
+# Audiobook processing outputs — never commit these
+hls_output/
+audiobook_keys.json
+ZeroTrust_Audiobook/
+ebook_src/

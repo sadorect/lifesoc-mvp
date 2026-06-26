@@ -4,7 +4,8 @@ const ITEMS = [
   { id: 'patches',   label: 'Patches',   svg: <><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></> },
   { id: 'scan',      label: 'Scan',      svg: <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></> },
   { id: 'incidents', label: 'IR Log',    svg: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></> },
-  { id: 'analyst',   label: 'Analyst',   svg: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></> }
+  { id: 'analyst',   label: 'Analyst',   svg: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></> },
+  { id: 'book',      label: 'Book',      svg: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></> },
 ]
 
 export default function Navigation({ active, onSelect }) {
