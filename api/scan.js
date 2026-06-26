@@ -58,8 +58,22 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json()
-    const text = data.content[0].text.trim()
-    const result = JSON.parse(text)
+    let text = data.content[0].text.trim()
+
+    // Models sometimes wrap JSON in markdown code fences or add prose.
+    // Strip fences and extract the outermost JSON object before parsing.
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start !== -1 && end !== -1) text = text.slice(start, end + 1)
+
+    let result
+    try {
+      result = JSON.parse(text)
+    } catch (parseErr) {
+      console.error('Scan JSON parse failed. Raw model output:', text)
+      return res.status(502).json({ error: 'Scanner returned an unreadable response — please try again' })
+    }
     res.json(result)
   } catch (err) {
     console.error('Scan error:', err)
