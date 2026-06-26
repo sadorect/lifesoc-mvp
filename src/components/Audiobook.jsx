@@ -163,9 +163,21 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
 
 // ── Chapter list ───────────────────────────────────────────────────────────
 
+const LISTENED_KEY = 'lifesoc-listened'
+
+function loadListened() {
+  try { return new Set(JSON.parse(localStorage.getItem(LISTENED_KEY) || '[]')) }
+  catch { return new Set() }
+}
+
+function saveListened(set) {
+  localStorage.setItem(LISTENED_KEY, JSON.stringify([...set]))
+}
+
 export default function Audiobook() {
   const { getToken } = useAuth()
-  const [active, setActive] = useState(null)
+  const [active,   setActive]   = useState(null)
+  const [listened, setListened] = useState(loadListened)
 
   const { data, loading, error } = useApiGet('/api/audiobook/chapters', getToken)
 
@@ -175,7 +187,17 @@ export default function Audiobook() {
   const { parts, canDownload } = data
   const flat = parts.flatMap(p => p.chapters)
 
-  const playNext = () => {
+  const markListened = id => {
+    setListened(prev => {
+      const next = new Set(prev)
+      next.add(id)
+      saveListened(next)
+      return next
+    })
+  }
+
+  const handleEnded = () => {
+    if (active) markListened(active.id)
     const i = flat.findIndex(c => c.id === active?.id)
     if (i >= 0 && i < flat.length - 1) setActive(flat[i + 1])
   }
@@ -186,16 +208,19 @@ export default function Audiobook() {
       {parts.map(part => (
         <div key={part.title} style={S.part}>
           <p style={S.partTitle}>{part.title}</p>
-          {part.chapters.map(ch => (
-            <button
-              key={ch.id}
-              onClick={() => setActive(ch)}
-              style={{ ...S.chapterRow, ...(active?.id === ch.id ? S.chapterActive : {}) }}
-            >
-              <span style={S.chapterDot}>{active?.id === ch.id ? '▶' : '○'}</span>
-              {ch.title}
-            </button>
-          ))}
+          {part.chapters.map(ch => {
+            const isActive   = active?.id === ch.id
+            const isDone     = listened.has(ch.id)
+            const rowStyle   = { ...S.chapterRow,
+              ...(isActive ? S.chapterActive : isDone ? S.chapterListened : {}) }
+            const dot        = isActive ? '▶' : isDone ? '✓' : '○'
+            return (
+              <button key={ch.id} onClick={() => setActive(ch)} style={rowStyle}>
+                <span style={{ ...S.chapterDot, ...(isDone && !isActive ? S.dotDone : {}) }}>{dot}</span>
+                {ch.title}
+              </button>
+            )
+          })}
         </div>
       ))}
 
@@ -205,7 +230,7 @@ export default function Audiobook() {
           getToken={getToken}
           canDownload={canDownload}
           onClose={() => setActive(null)}
-          onEnded={playNext}
+          onEnded={handleEnded}
         />
       )}
     </div>
@@ -221,8 +246,10 @@ const S = {
   part:         { marginBottom: 24 },
   partTitle:    { fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 6 },
   chapterRow:   { display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--border)', marginBottom: 4, cursor: 'pointer', color: 'var(--text-1)', fontSize: 14, textAlign: 'left' },
-  chapterActive:{ background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)' },
-  chapterDot:   { fontSize: 10, flexShrink: 0, width: 14, textAlign: 'center' },
+  chapterActive:  { background: 'var(--blue)', color: '#fff', border: '1px solid var(--blue)' },
+  chapterListened:{ background: 'rgba(46,160,67,0.12)', border: '1px solid rgba(46,160,67,0.35)', color: 'var(--text-1)' },
+  chapterDot:     { fontSize: 10, flexShrink: 0, width: 14, textAlign: 'center' },
+  dotDone:        { color: '#2ea043', fontWeight: 700 },
 
   player:       { position: 'fixed', bottom: 60, left: 0, right: 0, background: 'var(--bg-surface)', borderTop: '1px solid var(--border)', padding: '12px 16px 16px', zIndex: 50 },
   playerHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
