@@ -1,3 +1,5 @@
+import './_env.js'
+
 const SCAN_PROMPT = `You are the LifeSOC IoC Scanner. Analyse the user's description for Indicators of Compromise (IoCs) — early warning signals that a life domain breach may be developing.
 
 Respond ONLY with valid JSON in this exact structure:
@@ -43,7 +45,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: SCAN_PROMPT,
         messages: [{ role: 'user', content: input }]
