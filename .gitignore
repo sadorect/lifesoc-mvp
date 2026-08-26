@@ -8,4 +8,6 @@ dist
 hls_output/
 audiobook_keys.json
 ZeroTrust_Audiobook/
+ZeroTrust_Audiobook_native/
 ebook_src/
+.tts-tmp/

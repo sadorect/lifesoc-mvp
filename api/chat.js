@@ -1,4 +1,42 @@
 import './_env.js'
+import { verifyAuth }     from './audiobook/_auth.js'
+import { getEntitlement } from './_entitlement.js'
+
+// Cheap, no-API-call heuristic to short-circuit obvious off-topic abuse
+// (using this as a free general-purpose assistant) before spending on a
+// completion. Conservative by design: only blocks when a message matches
+// a clear off-topic pattern AND contains none of the book's vocabulary.
+const OFF_TOPIC_VERB = /\b(write|generate|debug|solve|translate)\b/i
+const OFF_TOPIC_NOUN = /\b(function|script|program(me)?|code|sql|regex|homework|poem|song|story|essay)\b/i
+
+const OFF_TOPIC_PATTERNS = [
+  /```/,
+  /\bwhat('s| is)\s+the\s+weather\b/i,
+  /\bwho\s+won\s+the\s+(game|match|election)\b/i,
+  /\blatest\s+news\b/i,
+  /\brecipe\s+for\b/i,
+  /\bcapital\s+of\s+\w+/i,
+]
+
+const ON_TOPIC_KEYWORDS = [
+  'zero trust', 'attack surface', 'cve', 'vulnerab', 'threat', 'breach',
+  'incident', 'patch', 'ioc', 'indicator', 'soc', 'security', 'hack',
+  'red team', 'boundary', 'boundaries', 'trust', 'risk', 'resilien',
+  'legacy code', 'social engineer', 'open port', 'access', 'exposure',
+  'relationship', 'finance', 'career', 'health', 'reputation', 'emotional',
+  'mental', 'domain', 'zero-day', 'fingerprint', 'defense', 'defence',
+  'harden', 'recover', 'containment', 'eradication', 'red-team',
+]
+
+function isLikelyOffTopic(messages) {
+  const last = [...messages].reverse().find(m => m.role === 'user')
+  const text = (last?.content || '').toString().toLowerCase()
+  const matchesOffTopic = OFF_TOPIC_PATTERNS.some(re => re.test(text))
+    || (OFF_TOPIC_VERB.test(text) && OFF_TOPIC_NOUN.test(text))
+  if (!matchesOffTopic) return false
+  const matchesOnTopic = ON_TOPIC_KEYWORDS.some(kw => text.includes(kw))
+  return !matchesOnTopic
+}
 
 const SYSTEM_PROMPT = `You are the LifeSOC AI Analyst — a personal security adviser operating within the Zero Trust framework for intentional living, based on "Zero Trust: A Hacker's Blueprint for a Secure Life."
 
@@ -30,13 +68,26 @@ RULES OF ENGAGEMENT
 5. Never catastrophise, never minimise — accurate information is always the goal
 6. Reference the user's specific situation when they share it
 
-When analysing: Which domain is affected? Is this a known CVE or new zero-day? What attack vectors are present? What IoC pattern is this? What patch addresses the root cause?`
+When analysing: Which domain is affected? Is this a known CVE or new zero-day? What attack vectors are present? What IoC pattern is this? What patch addresses the root cause?
+
+SCOPE
+You only discuss the Zero Trust framework as applied to the six life domains above. If asked about anything unrelated — writing code, general trivia, translation, homework, current events, or any other topic outside this framework — politely decline in one sentence and redirect back to their SOC/life-security context. Do not answer the off-topic request.`
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
+  const userId = await verifyAuth(req, res)
+  if (!userId) return
+
+  const { status } = await getEntitlement(userId)
+  if (status !== 'active') return res.status(403).json({ error: 'Book not redeemed or expired' })
+
   const { messages } = req.body
   if (!messages?.length) return res.status(400).json({ error: 'messages required' })
+
+  if (isLikelyOffTopic(messages)) {
+    return res.status(400).json({ error: "I'm scoped to your Zero Trust life-security coaching — that's outside what I help with here." })
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
 

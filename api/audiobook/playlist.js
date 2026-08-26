@@ -1,11 +1,15 @@
 import { verifyAuth }                    from './_auth.js'
 import { getObject, signUrl, streamToString } from './_r2.js'
+import { getEntitlement }                from '../_entitlement.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
   const userId = await verifyAuth(req, res)
   if (!userId) return
+
+  const { status } = await getEntitlement(userId)
+  if (status !== 'active') return res.status(403).json({ error: 'Book not redeemed or expired' })
 
   const { chapter } = req.query
   if (!chapter) return res.status(400).json({ error: 'chapter required' })

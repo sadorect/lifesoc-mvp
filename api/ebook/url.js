@@ -1,5 +1,6 @@
-import { verifyAuth } from '../audiobook/_auth.js'
-import { signUrl }    from '../audiobook/_r2.js'
+import { verifyAuth }     from '../audiobook/_auth.js'
+import { signUrl }        from '../audiobook/_r2.js'
+import { getEntitlement } from '../_entitlement.js'
 
 // Returns a short-lived signed URL to the ebook PDF for the reader to load.
 export default async function handler(req, res) {
@@ -7,6 +8,9 @@ export default async function handler(req, res) {
 
   const userId = await verifyAuth(req, res)
   if (!userId) return
+
+  const { status } = await getEntitlement(userId)
+  if (status !== 'active') return res.status(403).json({ error: 'Book not redeemed or expired' })
 
   const url = await signUrl('ebook/zerotrust.pdf', 3600)
   res.json({ url })

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '@clerk/clerk-react'
 import { getMessages, saveMessage, clearMessages } from '../lib/db.js'
 import { chatWithAnalyst } from '../lib/api.js'
 
@@ -11,6 +12,7 @@ const QUICK_PROMPTS = [
 ]
 
 export default function AIAnalyst() {
+  const { getToken } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -33,7 +35,8 @@ export default function AIAnalyst() {
 
     try {
       const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-      const reply = await chatWithAnalyst(history)
+      const token = await getToken()
+      const reply = await chatWithAnalyst(history, token)
       const assistantMsg = await saveMessage('assistant', reply)
       setMessages(prev => [...prev, assistantMsg])
     } catch (e) {

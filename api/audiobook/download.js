@@ -1,11 +1,15 @@
-import { verifyAuth, clerk } from './_auth.js'
-import { signUrl }           from './_r2.js'
+import { verifyAuth, clerk }  from './_auth.js'
+import { signUrl }            from './_r2.js'
+import { getEntitlement }     from '../_entitlement.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
   const userId = await verifyAuth(req, res)
   if (!userId) return
+
+  const { status } = await getEntitlement(userId)
+  if (status !== 'active') return res.status(403).json({ error: 'Book not redeemed or expired' })
 
   const user        = await clerk.users.getUser(userId)
   const canDownload = user.publicMetadata?.canDownload === true

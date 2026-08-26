@@ -1,5 +1,6 @@
 import { verifyAuth }               from './_auth.js'
 import { getObject, streamToString } from './_r2.js'
+import { getEntitlement }           from '../_entitlement.js'
 
 // Cache keys in memory for the lifetime of this function instance
 let keysCache = null
@@ -16,6 +17,9 @@ export default async function handler(req, res) {
 
   const userId = await verifyAuth(req, res)
   if (!userId) return
+
+  const { status } = await getEntitlement(userId)
+  if (status !== 'active') return res.status(403).json({ error: 'Book not redeemed or expired' })
 
   const { chapter } = req.query
   if (!chapter) return res.status(400).json({ error: 'chapter required' })

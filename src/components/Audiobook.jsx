@@ -25,6 +25,14 @@ function useApiGet(path, getToken) {
 
 // ── Player ─────────────────────────────────────────────────────────────────
 
+const SPEEDS    = [0.75, 1, 1.25, 1.5, 2]
+const SPEED_KEY = 'lifesoc-playback-speed'
+
+function loadSpeed() {
+  const saved = Number(localStorage.getItem(SPEED_KEY))
+  return SPEEDS.includes(saved) ? saved : 1
+}
+
 function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
   const audioRef  = useRef(null)
   const hlsRef    = useRef(null)
@@ -33,6 +41,16 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
   const [duration, setDuration] = useState(0)
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
+  const [speed,    setSpeed]    = useState(loadSpeed)
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = speed
+  }, [speed, chapter?.id])
+
+  const changeSpeed = value => {
+    setSpeed(value)
+    localStorage.setItem(SPEED_KEY, String(value))
+  }
 
   useEffect(() => {
     if (!chapter) return
@@ -67,6 +85,7 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
         hls.attachMedia(audio)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setLoading(false)
+          audio.playbackRate = speed
           audio.play().then(() => setPlaying(true)).catch(() => {})
         })
         hls.on(Hls.Events.ERROR, (_, data) => {
@@ -77,6 +96,7 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
         audio.src = `${src}&token=${encodeURIComponent(token)}`
         audio.addEventListener('loadedmetadata', () => {
           setLoading(false)
+          audio.playbackRate = speed
           audio.play().then(() => setPlaying(true)).catch(() => {})
         }, { once: true })
       } else {
@@ -146,16 +166,32 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
         <span>{duration ? fmt(duration) : '--:--'}</span>
       </div>
 
-      {/* Controls */}
+      {/* Controls — side spacers use flex:1 so the transport group stays
+          truly centered regardless of what's in the (possibly empty) right side. */}
       <div style={S.controls}>
-        <button onClick={() => { audioRef.current.currentTime -= 15 }} style={S.iconBtn} title="-15s">⏮</button>
-        <button onClick={togglePlay} style={S.playBtn} disabled={loading}>
-          {loading ? '…' : playing ? '⏸' : '▶'}
-        </button>
-        <button onClick={() => { audioRef.current.currentTime += 30 }} style={S.iconBtn} title="+30s">⏭</button>
-        {canDownload && (
-          <button onClick={handleDownload} style={{ ...S.iconBtn, marginLeft: 8 }} title="Download MP3">⬇</button>
-        )}
+        <div style={S.controlsSide} />
+
+        <div style={S.controlsCenter}>
+          <button onClick={() => { audioRef.current.currentTime -= 15 }} style={S.iconBtn} title="-15s">⏮</button>
+          <button onClick={togglePlay} style={S.playBtn} disabled={loading}>
+            {loading ? '…' : playing ? '⏸' : '▶'}
+          </button>
+          <button onClick={() => { audioRef.current.currentTime += 30 }} style={S.iconBtn} title="+30s">⏭</button>
+        </div>
+
+        <div style={{ ...S.controlsSide, ...S.controlsSideRight }}>
+          <select
+            value={speed}
+            onChange={e => changeSpeed(Number(e.target.value))}
+            style={S.speedSelect}
+            title="Playback speed"
+          >
+            {SPEEDS.map(s => <option key={s} value={s}>{s}x</option>)}
+          </select>
+          {canDownload && (
+            <button onClick={handleDownload} style={{ ...S.iconBtn, marginLeft: 8 }} title="Download MP3">⬇</button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -257,7 +293,19 @@ const S = {
   progressTrack:{ height: 4, background: 'var(--border)', borderRadius: 2, cursor: 'pointer', margin: '0 0 6px' },
   progressFill: { height: '100%', background: 'var(--blue)', borderRadius: 2, transition: 'width 0.5s linear' },
   timestamps:   { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-3)', marginBottom: 10 },
-  controls:     { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 },
+  controls:       { display: 'flex', alignItems: 'center' },
+  controlsSide:   { flex: 1, display: 'flex', alignItems: 'center' },
+  controlsSideRight: { justifyContent: 'flex-end' },
+  controlsCenter: { display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 },
   playBtn:      { width: 48, height: 48, borderRadius: '50%', background: 'var(--blue)', color: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   iconBtn:      { background: 'none', border: 'none', color: 'var(--text-2)', cursor: 'pointer', fontSize: 18, padding: '4px 8px' },
+  speedSelect:  {
+    flexShrink: 0, boxSizing: 'border-box', width: 56, marginLeft: 8,
+    fontSize: 12, fontWeight: 600, color: 'var(--text-2)', textAlign: 'center', textAlignLast: 'center',
+    border: '1px solid var(--border)', borderRadius: 999, background: 'var(--bg-raised)',
+    padding: '5px 18px 5px 6px', cursor: 'pointer',
+    appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
+    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'6\'><path d=\'M1 1l4 4 4-4\' stroke=\'%238b949e\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/></svg>")',
+    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
+  },
 }

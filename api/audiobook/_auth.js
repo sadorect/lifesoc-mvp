@@ -20,6 +20,8 @@ export async function verifyAuth(req, res) {
         'http://localhost:5173',
         'http://localhost:3000',
         'https://lifesoc-pwa.vercel.app',
+        'https://lifesoc.app',
+        'https://www.lifesoc.app',
         process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
       ].filter(Boolean),
     })

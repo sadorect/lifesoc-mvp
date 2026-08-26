@@ -14,7 +14,9 @@ dotenv.config({ path: '.env.local' })
 const ALLOWED = [
   'http://localhost:5173',
   'http://localhost:3000',
-  // 'https://your-app.vercel.app',   ← add production domain after deploy
+  'https://lifesoc-pwa.vercel.app',
+  'https://lifesoc.app',
+  'https://www.lifesoc.app',
 ]
 
 const s3 = new S3Client({

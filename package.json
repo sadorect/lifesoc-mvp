@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "audiobook:split": "node scripts/split-manuscript.mjs",
+    "audiobook:tts": "node scripts/generate-audiobook-tts.mjs",
     "audiobook:process": "node scripts/process-audiobook.mjs",
     "audiobook:upload": "node scripts/upload-to-r2.mjs",
     "ebook:upload": "node scripts/upload-ebook.mjs"
