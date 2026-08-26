@@ -24,7 +24,9 @@ export default function App() {
           justifyContent: 'center',
           minHeight: '100dvh',
           padding: 24,
-          backgroundImage: 'linear-gradient(rgba(13,17,23,0.72), rgba(13,17,23,0.72)), url(/book-cover.png)',
+          // Lighter scrim than the old light-coloured cover needed — this
+          // artwork is already dark navy, so a heavy overlay crushes it to black.
+          backgroundImage: 'linear-gradient(rgba(13,17,23,0.45), rgba(13,17,23,0.65)), url(/book-cover.jpeg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
