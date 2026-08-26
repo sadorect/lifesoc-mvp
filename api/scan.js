@@ -1,4 +1,6 @@
 import './_env.js'
+import { verifyAuth }     from './audiobook/_auth.js'
+import { getEntitlement } from './_entitlement.js'
 
 const SCAN_PROMPT = `You are the LifeSOC IoC Scanner. Analyse the user's description for Indicators of Compromise (IoCs) — early warning signals that a life domain breach may be developing.
 
@@ -30,6 +32,12 @@ Do not include any text outside the JSON object.`
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const userId = await verifyAuth(req, res)
+  if (!userId) return
+
+  const { status } = await getEntitlement(userId)
+  if (status !== 'active') return res.status(403).json({ error: 'Book not redeemed or expired' })
 
   const { input } = req.body
   if (!input?.trim()) return res.status(400).json({ error: 'input required' })

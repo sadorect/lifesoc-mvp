@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/clerk-react'
 import { getScans, saveScan } from '../lib/db.js'
 import { runIoCscan } from '../lib/api.js'
 
@@ -7,6 +8,7 @@ const RISK_DIM   = { critical: 'var(--red-dim)', high: 'var(--orange-dim)', medi
 const DOMAIN_ICONS = { relationships: '🤝', finances: '💰', career: '🧭', health: '❤️', reputation: '🔑', mental: '🧠' }
 
 export default function IoCScanner() {
+  const { getToken } = useAuth()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -20,7 +22,8 @@ export default function IoCScanner() {
     if (!input.trim() || loading) return
     setLoading(true); setError(null); setResult(null)
     try {
-      const r = await runIoCscan(input)
+      const token = await getToken()
+      const r = await runIoCscan(input, token)
       const saved = await saveScan(input, r)
       setResult(saved)
       setHistory(prev => [saved, ...prev.slice(0, 9)])

@@ -12,10 +12,13 @@ export async function chatWithAnalyst(messages, token) {
   return data.content
 }
 
-export async function runIoCscan(input) {
+export async function runIoCscan(input, token) {
   const res = await fetch('/api/scan', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({ input })
   })
   const data = await res.json()
