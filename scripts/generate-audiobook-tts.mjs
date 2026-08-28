@@ -27,7 +27,9 @@ const TMP_ROOT   = join(ROOT, '.tts-tmp')
 
 const API_KEY = process.env.OPENAI_API_KEY
 const MODEL   = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts'
-const VOICE   = process.env.OPENAI_TTS_VOICE || 'onyx'
+// 'echo' is the voice the published audiobook was narrated in — keep it as the
+// default so a re-run of a single chapter can't silently mismatch the rest.
+const VOICE   = process.env.OPENAI_TTS_VOICE || 'echo'
 const MAX_CHUNK_CHARS = 3500
 
 if (!API_KEY) {
