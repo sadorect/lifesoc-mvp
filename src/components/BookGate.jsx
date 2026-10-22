@@ -66,7 +66,7 @@ function RedeemScreen({ onRedeemed }) {
     <div style={S.center}>
       <form onSubmit={handleSubmit} style={S.card}>
         <p style={S.title}>Redeem your book</p>
-        <p style={S.subtitle}>Enter the access code from your book and answer the verification question below.</p>
+        <p style={S.subtitle}>Enter the access code from your book and answer the verification question below. Reviewers: enter your reviewer code and leave the question blank.</p>
 
         <label style={S.label}>Access code</label>
         <input
@@ -85,7 +85,6 @@ function RedeemScreen({ onRedeemed }) {
           style={S.input}
           autoComplete="off"
           disabled={!question}
-          required
         />
 
         {error && <p style={S.error}>{error}</p>}

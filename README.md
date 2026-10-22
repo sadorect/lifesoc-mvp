@@ -43,6 +43,7 @@ Running only `npm run dev` will load the UI, but every API call fails — that s
 | `VITE_CLERK_PUBLISHABLE_KEY` | Clerk client SDK (the only var exposed to the browser) |
 | `CLERK_SECRET_KEY` | Server-side token verification and metadata writes |
 | `BOOK_ACCESS_CODE` | The shared code printed in the book |
+| `REVIEWER_CODES` | Per-reviewer codes, `name:CODE` pairs comma-separated — see [Reviewer codes](#reviewer-codes) |
 | `ANTHROPIC_API_KEY` | AI Analyst and IoC Scanner |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` | Audiobook and ebook storage |
 | `OPENAI_API_KEY` | Audiobook narration scripts only — not needed to run the app |
@@ -73,6 +74,12 @@ A few properties worth preserving if you touch this code:
 - **Entitlement is re-checked on every protected request.** The UI gate is convenience; `getEntitlement()` in `api/_entitlement.js` is the boundary.
 
 Entitlement lapses 365 days after `redeemedAt`, after which the app shows a "complimentary year has ended" message. No billing exists yet.
+
+### Reviewer codes
+
+Reviewers redeem with a personal code from `REVIEWER_CODES` (e.g. `ada:REVIEW-ADA-7K2Q,bola:REVIEW-BOLA-M4XP`) in the same code box, leaving the question blank. `/api/redeem` checks reviewer codes first; a match skips the question, writes `accessType: 'reviewer'`, the reviewer's name and code to `privateMetadata`, and sets `publicMetadata.canDownload` so they can download the audiobook.
+
+Reviewer access never lapses, but `getEntitlement()` only treats it as active while that reviewer's code is still in `REVIEWER_CODES` — delete the pair (and redeploy) to revoke them. A wrong reviewer code falls through to the normal check and gets the same generic error. Keep the codes in Vercel only; this repo is public.
 
 ## API routes
 
