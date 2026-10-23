@@ -27,11 +27,11 @@ npm install
 cp .env.example .env.local   # then fill in real values
 ```
 
-Local development needs **two processes**. Vite serves the UI on `:5173` and proxies `/api/*` to `:3000`, where the Vercel functions run:
+Local development needs **two processes**. Vite serves the UI on `:5173` and proxies `/api/*` to `:3000`, where the API runs:
 
 ```bash
-vercel dev      # serverless functions on :3000  (requires `vercel login`)
-npm run dev     # Vite UI on :5173  ← open this one
+node selfhost/server.js   # API on :3000 (reads .env.local) — or `vercel dev`
+npm run dev               # Vite UI on :5173  ← open this one
 ```
 
 Running only `npm run dev` will load the UI, but every API call fails — that surfaces as "Could not load the verification question" on the redeem screen.
@@ -46,6 +46,7 @@ Running only `npm run dev` will load the UI, but every API call fails — that s
 | `REVIEWER_CODES` | Per-reviewer codes, `name:CODE` pairs comma-separated — see [Reviewer codes](#reviewer-codes) |
 | `ANTHROPIC_API_KEY` | AI Analyst and IoC Scanner |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` | Audiobook and ebook storage |
+| `EXTRA_AUTHORIZED_PARTIES` | Optional extra origins accepted on Clerk tokens, comma-separated (e.g. a staging host) |
 | `OPENAI_API_KEY` | Audiobook narration scripts only — not needed to run the app |
 | `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE` | Optional narration overrides (default `gpt-4o-mini-tts`, `echo`) |
 
@@ -150,9 +151,21 @@ The reader remembers the last page in `localStorage` and clamps it to the docume
 
 Vercel, auto-deploying from `main`. Set every server-side variable in the Vercel project settings — `.env.local` is local only.
 
+### Self-hosted (Docker)
+
+`selfhost/` runs the same handlers outside Vercel: `server.js` mounts each `api/` file at the path Vercel would give it, serves the built `dist/` with an SPA fallback, and exposes `GET /up` for uptime checks. The container publishes on `127.0.0.1:3010` only; a reverse proxy (Apache) fronts it.
+
+```bash
+cp .env.example selfhost/.env   # production values, incl. VITE_CLERK_PUBLISHABLE_KEY (needed at build time)
+selfhost/deploy.sh              # pull main, rebuild, swap, health-check; rolls back on failure
+selfhost/deploy.sh --rollback   # return to the previously running image
+```
+
+Cache headers matter for the PWA: `/assets/*` is immutable, while `index.html`, `sw.js`, `registerSW.js` and the manifest are `no-cache` so installed apps pick up new builds. `vercel.json` is ignored here; a new route needs adding to the table in `selfhost/server.js` as well.
+
 When adding a domain, three places need updating or authenticated requests will fail with `401`:
 
-1. `authorizedParties` in `api/audiobook/_auth.js`
+1. `authorizedParties` in `api/audiobook/_auth.js` (or the `EXTRA_AUTHORIZED_PARTIES` env var, comma-separated origins)
 2. `ALLOWED` in `scripts/set-r2-cors.mjs`, then re-run it
 3. The Clerk dashboard's allowed domains
 
@@ -171,4 +184,5 @@ src/
   lib/db.js             IndexedDB accessors
   lib/api.js            typed fetch wrappers
 scripts/                content pipelines (see above)
+selfhost/               Express server, Dockerfile, compose + deploy script (self-hosting)
 ```

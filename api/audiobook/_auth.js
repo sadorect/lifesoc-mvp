@@ -23,6 +23,8 @@ export async function verifyAuth(req, res) {
         'https://lifesoc.app',
         'https://www.lifesoc.app',
         process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+        // Comma-separated origins, e.g. a self-hosted staging hostname.
+        ...String(process.env.EXTRA_AUTHORIZED_PARTIES ?? '').split(',').map((s) => s.trim()),
       ].filter(Boolean),
     })
     return payload.sub

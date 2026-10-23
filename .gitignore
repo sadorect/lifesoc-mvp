@@ -11,3 +11,4 @@ ZeroTrust_Audiobook/
 ZeroTrust_Audiobook_native/
 ebook_src/
 .tts-tmp/
+.env

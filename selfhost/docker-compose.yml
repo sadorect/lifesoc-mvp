@@ -1,0 +1,22 @@
+# Run from selfhost/:  docker compose up -d --build
+# Secrets come from selfhost/.env (gitignored) — see .env.example in the repo root.
+services:
+  lifesoc:
+    container_name: lifesoc
+    image: lifesoc:latest
+    build:
+      context: ..
+      dockerfile: selfhost/Dockerfile
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+    # Loopback only: Docker port publishes bypass ufw. Apache proxies to this.
+    ports:
+      - "127.0.0.1:${LIFESOC_PORT:-3010}:3000"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }

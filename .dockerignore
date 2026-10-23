@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.vercel
+.env
+.env*
+selfhost/.env
+hls_output
+ZeroTrust_Audiobook
+ZeroTrust_Audiobook_native
+ebook_src
+.tts-tmp
+audiobook_keys.json

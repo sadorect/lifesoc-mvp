@@ -17,6 +17,7 @@ const ALLOWED = [
   'https://lifesoc-pwa.vercel.app',
   'https://lifesoc.app',
   'https://www.lifesoc.app',
+  'https://staging.lifesoc.app',
 ]
 
 const s3 = new S3Client({
