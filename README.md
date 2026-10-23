@@ -47,6 +47,7 @@ Running only `npm run dev` will load the UI, but every API call fails — that s
 | `ANTHROPIC_API_KEY` | AI Analyst and IoC Scanner |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` | Audiobook and ebook storage |
 | `EXTRA_AUTHORIZED_PARTIES` | Optional extra origins accepted on Clerk tokens, comma-separated (e.g. a staging host) |
+| `CANONICAL_HOST` | Self-hosted only: canonical host for the apex → www redirect (default `www.lifesoc.app`) |
 | `OPENAI_API_KEY` | Audiobook narration scripts only — not needed to run the app |
 | `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE` | Optional narration overrides (default `gpt-4o-mini-tts`, `echo`) |
 

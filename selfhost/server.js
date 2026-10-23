@@ -40,6 +40,18 @@ app.use(express.json({ limit: '1mb' }))
 // Uptime probe (AppDash). Deliberately touches no third party.
 app.get('/up', (req, res) => res.type('text').send('ok'))
 
+// What Vercel did at the edge: HTTP → HTTPS and the apex → www, both 308.
+// Cloudflare sets X-Forwarded-Proto; Apache passes it through and puts the
+// original Host in X-Forwarded-Host (it proxies with Host: 127.0.0.1).
+const CANONICAL_HOST = process.env.CANONICAL_HOST ?? 'www.lifesoc.app'
+const APEX_HOST = CANONICAL_HOST.replace(/^www\./, '')
+app.use((req, res, next) => {
+  const host = String(req.headers['x-forwarded-host'] ?? req.headers.host ?? '').split(',')[0].trim().toLowerCase().split(':')[0]
+  const insecure = req.headers['x-forwarded-proto'] === 'http'
+  if (host !== APEX_HOST && !insecure) return next()
+  res.redirect(308, `https://${host === APEX_HOST ? CANONICAL_HOST : host}${req.originalUrl}`)
+})
+
 // Handlers check req.method themselves, as they did on Vercel.
 for (const [path, handler] of Object.entries(routes)) app.all(path, handler)
 
