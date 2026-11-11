@@ -9,6 +9,7 @@ import express from 'express'
 import { toNodeHandler } from 'better-auth/node'
 import { auth, googleEnabled } from '../api/_auth-server.js'
 import adminRouter from '../api/admin.js'
+import messagesRouter from '../api/messages.js'
 import { getSetting, signupsPaused } from '../api/_settings.js'
 import { logUsage } from '../api/_usage.js'
 
@@ -75,6 +76,7 @@ app.use(express.json({ limit: '1mb' }))
 
 // Admin (ADMIN_EMAILS only) and the public bits of the site settings.
 app.use('/api/admin', adminRouter)
+app.use('/api/messages', messagesRouter)
 app.get('/api/site', (req, res) => {
   res.setHeader('Cache-Control', 'no-store')
   res.json({ announcement: getSetting('announcement'), signupsPaused: signupsPaused() })
