@@ -2,7 +2,7 @@ import './_env.js'
 
 // Per-reviewer access codes, set in Vercel as REVIEWER_CODES:
 //   "ada:REVIEW-ADA-7K2Q,bola:REVIEW-BOLA-M4XP"
-// The name is only for attribution in Clerk metadata. Removing a pair revokes
+// The name is only for attribution in the entitlement table. Removing a pair revokes
 // that reviewer — new redemptions fail and existing access stops immediately.
 
 function normalize(s) {

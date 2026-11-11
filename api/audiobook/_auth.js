@@ -1,38 +1,19 @@
-import './_env.js'
-import { createClerkClient, verifyToken } from '@clerk/backend'
+import '../_env.js'
+import { fromNodeHeaders } from 'better-auth/node'
+import { auth } from '../_auth-server.js'
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
-
-/** Verifies the Bearer token. Returns userId string or sends 401 and returns null. */
+/**
+ * Reads the session cookie. Returns the userId, or sends 401 and returns null.
+ * The cookie is same-origin, so iOS native HLS sends it on playlist and key
+ * requests too: no token in URLs any more.
+ */
 export async function verifyAuth(req, res) {
-  // Header for hls.js (Chrome/Firefox/Android); query param for native HLS (iOS Safari,
-  // which can't set request headers on media/key requests).
-  const token = req.headers.authorization?.split(' ')[1] ?? req.query.token
-  if (!token) {
-    res.status(401).json({ error: 'No token' })
-    return null
-  }
   try {
-    const payload = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY,
-      publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
-      authorizedParties: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://lifesoc-pwa.vercel.app',
-        'https://lifesoc.app',
-        'https://www.lifesoc.app',
-        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-        // Comma-separated origins, e.g. a self-hosted staging hostname.
-        ...String(process.env.EXTRA_AUTHORIZED_PARTIES ?? '').split(',').map((s) => s.trim()),
-      ].filter(Boolean),
-    })
-    return payload.sub
+    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) })
+    if (session?.user?.id) return session.user.id
   } catch (e) {
-    console.error('[auth] verifyToken failed:', e.message)
-    res.status(401).json({ error: 'Invalid token' })
-    return null
+    console.error('[auth] getSession failed:', e.message)
   }
+  res.status(401).json({ error: 'Not signed in' })
+  return null
 }
-
-export { clerk }

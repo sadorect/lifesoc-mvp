@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getDomains, updateDomain } from '../lib/db.js'
+import { useSession, signOut } from '../lib/auth-client.js'
 
 const SEVERITY_COLOR = score =>
   score >= 7 ? 'var(--green)' : score >= 4 ? 'var(--yellow)' : 'var(--red)'
@@ -11,6 +12,7 @@ const POSTURE_LABEL = avg =>
   avg >= 8 ? 'SECURE' : avg >= 6 ? 'GUARDED' : avg >= 4 ? 'ELEVATED' : 'CRITICAL'
 
 export default function Dashboard({ onNavigate }) {
+  const { data: session } = useSession()
   const [domains, setDomains] = useState([])
   const [editing, setEditing] = useState(null)
   const [editScore, setEditScore] = useState(5)
@@ -100,6 +102,16 @@ export default function Dashboard({ onNavigate }) {
             <span>{a.icon}</span><span>{a.label}</span>
           </button>
         ))}
+      </div>
+
+      {/* Account */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-3)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {session?.user?.email}
+        </span>
+        <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }} onClick={() => signOut()}>
+          Sign out
+        </button>
       </div>
 
       {/* Edit drawer */}

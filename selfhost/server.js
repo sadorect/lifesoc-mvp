@@ -1,11 +1,13 @@
-// Self-hosted server: the Vercel-style handlers in api/ under Express, plus the
-// built frontend from dist/. Apache proxies the whole site here. Vercel ignores
-// this file.
+// Self-hosted server: the API handlers in api/ under Express, sign-in
+// (Better Auth) and the built frontend from dist/. Apache proxies the whole
+// site here.
 //
 //   npm run build && PORT=3000 node selfhost/server.js   (from the repo root, where .env lives)
 import '../api/_env.js'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
+import { toNodeHandler } from 'better-auth/node'
+import { auth, googleEnabled } from '../api/_auth-server.js'
 
 import chat from '../api/chat.js'
 import scan from '../api/scan.js'
@@ -35,7 +37,6 @@ const routes = {
 const app = express()
 app.disable('x-powered-by')
 app.set('trust proxy', 'loopback')
-app.use(express.json({ limit: '1mb' }))
 
 // Uptime probe (AppDash). Deliberately touches no third party.
 app.get('/up', (req, res) => res.type('text').send('ok'))
@@ -51,6 +52,12 @@ app.use((req, res, next) => {
   if (host !== APEX_HOST && !insecure) return next()
   res.redirect(308, `https://${host === APEX_HOST ? CANONICAL_HOST : host}${req.originalUrl}`)
 })
+
+// Sign-in (Better Auth). Must come before express.json: it reads the raw body.
+app.get('/api/auth-config', (req, res) => res.json({ google: googleEnabled }))
+app.all('/api/auth/*splat', toNodeHandler(auth))
+
+app.use(express.json({ limit: '1mb' }))
 
 // Handlers check req.method themselves, as they did on Vercel.
 for (const [path, handler] of Object.entries(routes)) app.all(path, handler)

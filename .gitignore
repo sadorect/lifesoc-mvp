@@ -12,3 +12,6 @@ ZeroTrust_Audiobook_native/
 ebook_src/
 .tts-tmp/
 .env
+
+# Self-hosted runtime data (SQLite: accounts, sessions, entitlements)
+selfhost/data/

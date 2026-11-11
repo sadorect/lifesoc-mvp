@@ -7,16 +7,30 @@ services:
     build:
       context: ..
       dockerfile: selfhost/Dockerfile
-      args:
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
     env_file: .env
+    # Run as the host's deploy user so the bind-mounted ./data stays writable by both.
+    user: "${LIFESOC_UID:-1001}:${LIFESOC_GID:-1001}"
     environment:
       HOST: 0.0.0.0
       PORT: 3000
     # Loopback only: Docker port publishes bypass ufw. Apache proxies to this.
     ports:
       - "127.0.0.1:${LIFESOC_PORT:-3010}:3000"
+    volumes:
+      # SQLite: accounts, sessions, entitlements. Backed up nightly from the host path.
+      - ./data:/data
+    extra_hosts:
+      # Postfix on the host, for verification and reset emails.
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "5" }
+    networks: [lifesoc]
+
+# A fixed subnet so Postfix's mynetworks can allow exactly this container to send.
+networks:
+  lifesoc:
+    ipam:
+      config:
+        - subnet: 172.30.10.0/29

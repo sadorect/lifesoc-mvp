@@ -1,16 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@clerk/clerk-react'
+import { useSession, signOut } from '../lib/auth-client.js'
 import { getEntitlementStatus, getRedeemChallenge, submitRedeem } from '../lib/api.js'
 
 export default function BookGate({ children }) {
-  const { getToken } = useAuth()
   const [status, setStatus] = useState(null) // null (loading) | 'none' | 'expired' | 'active'
 
   const refresh = useCallback(async () => {
-    const token = await getToken()
-    const s = await getEntitlementStatus(token)
-    setStatus(s)
-  }, [getToken])
+    setStatus(await getEntitlementStatus())
+  }, [])
 
   useEffect(() => { refresh().catch(() => setStatus('none')) }, [refresh])
 
@@ -26,13 +23,13 @@ function ExpiredScreen() {
       <div style={S.card}>
         <p style={S.title}>Your complimentary year has ended.</p>
         <p style={S.subtitle}>Subscription options are coming soon.</p>
+        <SignedInAs />
       </div>
     </div>
   )
 }
 
 function RedeemScreen({ onRedeemed }) {
-  const { getToken } = useAuth()
   const [question, setQuestion] = useState(null)
   const [code, setCode]         = useState('')
   const [answer, setAnswer]     = useState('')
@@ -40,11 +37,10 @@ function RedeemScreen({ onRedeemed }) {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    getToken()
-      .then(getRedeemChallenge)
+    getRedeemChallenge()
       .then(setQuestion)
       .catch(() => setError('Could not load the verification question. Please refresh and try again.'))
-  }, [getToken])
+  }, [])
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -52,8 +48,7 @@ function RedeemScreen({ onRedeemed }) {
     setSubmitting(true)
     setError(null)
     try {
-      const token = await getToken()
-      await submitRedeem(token, { code, questionId: question.questionId, answer })
+      await submitRedeem({ code, questionId: question.questionId, answer })
       await onRedeemed()
     } catch (err) {
       setError(err.message)
@@ -92,8 +87,20 @@ function RedeemScreen({ onRedeemed }) {
         <button type="submit" style={S.button} disabled={submitting || !question}>
           {submitting ? 'Verifying…' : 'Redeem'}
         </button>
+        <SignedInAs />
       </form>
     </div>
+  )
+}
+
+// Lets someone who signed in with the wrong account get back out.
+function SignedInAs() {
+  const { data: session } = useSession()
+  return (
+    <p style={S.who}>
+      Signed in as {session?.user?.email}.{' '}
+      <button type="button" style={S.linkBtn} onClick={() => signOut()}>Sign out</button>
+    </p>
   )
 }
 
@@ -117,6 +124,8 @@ const S = {
     background: 'var(--bg-raised)', color: 'var(--text-1)', fontSize: 14,
   },
   error:  { fontSize: 13, color: 'var(--red)', margin: '4px 0 0' },
+  who:    { fontSize: 12, color: 'var(--text-3)', margin: '8px 0 0', textAlign: 'center' },
+  linkBtn: { background: 'none', border: 'none', padding: 0, color: 'var(--blue)', fontSize: 12, cursor: 'pointer' },
   button: {
     marginTop: 12, padding: '10px 0', borderRadius: 8, border: 'none',
     background: 'var(--blue)', color: '#fff', fontSize: 14, fontWeight: 600,

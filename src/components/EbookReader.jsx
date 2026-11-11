@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useAuth } from '@clerk/clerk-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -13,7 +12,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const STORAGE_KEY = 'ebook-page'
 
 export default function EbookReader() {
-  const { getToken } = useAuth()
   const containerRef = useRef(null)
 
   const [fileUrl,  setFileUrl]  = useState(null)
@@ -25,12 +23,11 @@ export default function EbookReader() {
 
   // Fetch a signed URL for the PDF
   useEffect(() => {
-    getToken()
-      .then(token => fetch('/api/ebook/url', { headers: { Authorization: `Bearer ${token}` } }))
+    fetch('/api/ebook/url')
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(({ url }) => setFileUrl(url))
       .catch(() => setError('Could not load the book.'))
-  }, [getToken])
+  }, [])
 
   // Track container width so pages render full-width on any screen
   useEffect(() => {

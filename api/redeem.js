@@ -1,4 +1,5 @@
-import { verifyAuth, clerk } from './audiobook/_auth.js'
+import { verifyAuth } from './audiobook/_auth.js'
+import { grantReader, grantReviewer } from './_store.js'
 import { QUESTIONS } from './_questions.js'
 import { findReviewer } from './_reviewers.js'
 
@@ -23,16 +24,7 @@ export default async function handler(req, res) {
   // Reviewers skip the question, get indefinite access and audiobook downloads.
   const reviewer = findReviewer(code)
   if (reviewer) {
-    await clerk.users.updateUserMetadata(userId, {
-      privateMetadata: {
-        bookRedeemed: true,
-        redeemedAt: new Date().toISOString(),
-        accessType: 'reviewer',
-        reviewer: reviewer.name,
-        reviewerCode: reviewer.code,
-      },
-      publicMetadata: { canDownload: true },
-    })
+    grantReviewer(userId, reviewer)
     return res.json({ success: true })
   }
 
@@ -44,16 +36,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: GENERIC_ERROR })
   }
 
-  await clerk.users.updateUserMetadata(userId, {
-    // Metadata updates deep-merge, so clear any revoked reviewer fields explicitly.
-    privateMetadata: {
-      bookRedeemed: true,
-      redeemedAt: new Date().toISOString(),
-      accessType: null,
-      reviewer: null,
-      reviewerCode: null,
-    },
-  })
+  grantReader(userId)
 
   res.json({ success: true })
 }

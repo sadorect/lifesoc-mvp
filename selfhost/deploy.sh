@@ -2,6 +2,7 @@
 # Deploy the self-hosted LifeSOC container from the current checkout.
 #
 #   selfhost/deploy.sh             pull main, rebuild, swap, health-check (auto-rollback on failure)
+#   selfhost/deploy.sh --local     same, but build the checkout as it is (e.g. a branch, for staging)
 #   selfhost/deploy.sh --rollback  go back to the image that was running before the last deploy
 #
 # Needs: docker compose (sudo), selfhost/.env with the production variables.
@@ -30,8 +31,20 @@ fi
 
 [[ -f .env ]] || { echo "selfhost/.env is missing." >&2; exit 1; }
 
-git -C .. pull --ff-only https://github.com/sadorect/lifesoc-mvp.git main
+if [[ "${1:-}" != "--local" ]]; then
+  git -C .. pull --ff-only https://github.com/sadorect/lifesoc-mvp.git main
+fi
 echo "Deploying $(git -C .. rev-parse --short HEAD)"
+
+# Snapshot the database first (accounts, sessions, entitlements). The running
+# container holds better-sqlite3, so it can take a consistent online backup.
+mkdir -p data/backups
+if [[ -f data/lifesoc.db ]]; then
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  $DOCKER exec lifesoc node -e "require('better-sqlite3')('/data/lifesoc.db').backup('/data/backups/pre-deploy-$stamp.db').then(()=>console.log('DB backed up: data/backups/pre-deploy-$stamp.db'))" \
+    || { echo "Database backup failed; not deploying." >&2; exit 1; }
+  ls -1t data/backups/pre-deploy-*.db | tail -n +11 | xargs -r rm -f   # keep the last 10
+fi
 
 # Keep the running image so a failed deploy (or --rollback) can return to it.
 if $DOCKER image inspect lifesoc:latest >/dev/null 2>&1; then

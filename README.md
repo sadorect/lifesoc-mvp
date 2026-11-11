@@ -12,7 +12,7 @@ Access is gated on proof of book ownership — see [Access control](#access-cont
 | --- | --- |
 | Frontend | React 18 + Vite, installable PWA (`vite-plugin-pwa`) |
 | Backend | Vercel serverless functions in `api/` (plain Node — **not** Next.js) |
-| Auth | Clerk (`@clerk/clerk-react` client, `@clerk/backend` server) |
+| Auth | Self-hosted [Better Auth](https://better-auth.com) (email + password, Google) on SQLite |
 | Media | Cloudflare R2, served via short-lived presigned URLs |
 | Audiobook | HLS with AES-128 encrypted segments (`hls.js`, native HLS on Safari) |
 | Ebook | `react-pdf` |
@@ -40,13 +40,17 @@ Running only `npm run dev` will load the UI, but every API call fails — that s
 
 | Variable | Used for |
 | --- | --- |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk client SDK (the only var exposed to the browser) |
-| `CLERK_SECRET_KEY` | Server-side token verification and metadata writes |
+| `BETTER_AUTH_SECRET` | Signs session cookies. 32+ random bytes (`openssl rand -hex 32`); changing it signs everyone out |
+| `BETTER_AUTH_URL` | Public base URL used in email links and the Google callback (e.g. `https://www.lifesoc.app`) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional "Continue with Google". Redirect URI: `<BETTER_AUTH_URL>/api/auth/callback/google` |
+| `SMTP_URL`, `MAIL_FROM` | Verification and reset emails (e.g. `smtp://host.docker.internal:25`, `LifeSOC <no-reply@lifesoc.app>`). Unset in development: links are logged instead |
+| `DATA_DIR` | Where `lifesoc.db` (SQLite) lives; `/data` in the container, `selfhost/data` locally |
+| `CLERK_SECRET_KEY` | Only for the one-off `scripts/migrate-from-clerk.mjs` |
 | `BOOK_ACCESS_CODE` | The shared code printed in the book |
 | `REVIEWER_CODES` | Per-reviewer codes, `name:CODE` pairs comma-separated — see [Reviewer codes](#reviewer-codes) |
 | `ANTHROPIC_API_KEY` | AI Analyst and IoC Scanner |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` | Audiobook and ebook storage |
-| `EXTRA_AUTHORIZED_PARTIES` | Optional extra origins accepted on Clerk tokens, comma-separated (e.g. a staging host) |
+| `EXTRA_AUTHORIZED_PARTIES` | Optional extra trusted origins for sign-in, comma-separated (e.g. `https://staging.lifesoc.app`) |
 | `CANONICAL_HOST` | Self-hosted only: canonical host for the apex → www redirect (default `www.lifesoc.app`) |
 | `OPENAI_API_KEY` | Audiobook narration scripts only — not needed to run the app |
 | `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE` | Optional narration overrides (default `gpt-4o-mini-tts`, `echo`) |
@@ -57,16 +61,12 @@ Changing R2 bucket permissions (e.g. CORS) needs an **Admin Read & Write** R2 to
 
 Two independent layers:
 
-1. **Clerk sign-in** — everything sits behind `<SignedIn>`.
-2. **Book redemption** — a one-time gate on top of Clerk.
+1. **Sign-in** (self-hosted, [Better Auth](https://better-auth.com), email + password or Google). Sessions are an HttpOnly cookie, so every same-origin `/api` request is authenticated, including iOS native HLS playlist and key requests. Accounts, sessions and entitlements live in SQLite (`DATA_DIR/lifesoc.db`).
+2. **Book redemption** — a one-time gate on top of sign-in.
 
-On first sign-in, `BookGate` calls `/api/entitlement`; if the user hasn't redeemed, it shows the redeem screen. That screen requests a challenge from `/api/redeem-challenge`, which returns **one** randomly chosen question — its text and a `ref` pointing at the section of the book it came from, never the answer. The user submits the access code and their answer to `/api/redeem`, which validates both together and, on success, writes to Clerk `privateMetadata`:
+On first sign-in, `BookGate` calls `/api/entitlement`; if the user hasn't redeemed, it shows the redeem screen. That screen requests a challenge from `/api/redeem-challenge`, which returns **one** randomly chosen question — its text and a `ref` pointing at the section of the book it came from, never the answer. The user submits the access code and their answer to `/api/redeem`, which validates both together and, on success, writes a row to the `entitlement` table (`book_redeemed = 1`, `redeemed_at`). Reviewer codes also set `access_type = 'reviewer'` and `can_download = 1`.
 
-```json
-{ "bookRedeemed": true, "redeemedAt": "<ISO 8601>" }
-```
-
-`privateMetadata` is deliberate: it is writable only server-side and is never exposed to the browser, which is why the frontend has to ask `/api/entitlement` rather than reading it from the Clerk session.
+The table is server-side only, which is why the frontend has to ask `/api/entitlement` rather than reading access from the session.
 
 A few properties worth preserving if you touch this code:
 
@@ -85,7 +85,7 @@ Reviewer access never lapses, but `getEntitlement()` only treats it as active wh
 
 ## API routes
 
-Every route below verifies the Clerk session. The **Entitled** column marks those that additionally require an active, unexpired redemption and return `403` otherwise.
+Every route below requires a signed-in session (cookie). The **Entitled** column marks those that additionally require an active, unexpired redemption and return `403` otherwise.
 
 | Route | Entitled | Purpose |
 | --- | :---: | --- |
@@ -107,7 +107,7 @@ Every route below verifies the Clerk session. The **Entitled** column marks thos
 Audio segments are fetched **directly from R2** by the browser using presigned URLs; only the manifest and the decryption key pass through the API. Two consequences:
 
 - R2's CORS policy must list every origin the app is served from (`scripts/set-r2-cors.mjs`).
-- Presigned segment URLs must carry no `Authorization` header, or R2 rejects the signature. `Audiobook.jsx` attaches the Clerk token via `xhrSetup` only for `/api/audiobook/*`.
+- Presigned segment URLs must carry no `Authorization` header, or R2 rejects the signature. Auth for the playlist and key comes from the same-origin session cookie, so nothing is added to requests.
 
 iOS Safari uses native HLS and cannot set headers on media requests, so the token is passed as a `?token=` query param and baked into the key URI by `playlist.js`.
 
@@ -157,8 +157,9 @@ Vercel, auto-deploying from `main`. Set every server-side variable in the Vercel
 `selfhost/` runs the same handlers outside Vercel: `server.js` mounts each `api/` file at the path Vercel would give it, serves the built `dist/` with an SPA fallback, and exposes `GET /up` for uptime checks. The container publishes on `127.0.0.1:3010` only; a reverse proxy (Apache) fronts it.
 
 ```bash
-cp .env.example selfhost/.env   # production values, incl. VITE_CLERK_PUBLISHABLE_KEY (needed at build time)
-selfhost/deploy.sh              # pull main, rebuild, swap, health-check; rolls back on failure
+cp .env.example selfhost/.env   # production values
+selfhost/deploy.sh              # back up the DB, pull main, rebuild, swap, health-check; rolls back on failure
+selfhost/deploy.sh --local      # same, building the checkout as it is (staging tests from a branch)
 selfhost/deploy.sh --rollback   # return to the previously running image
 ```
 
@@ -166,9 +167,9 @@ Cache headers matter for the PWA: `/assets/*` is immutable, while `index.html`, 
 
 When adding a domain, three places need updating or authenticated requests will fail with `401`:
 
-1. `authorizedParties` in `api/audiobook/_auth.js` (or the `EXTRA_AUTHORIZED_PARTIES` env var, comma-separated origins)
+1. `trustedOrigins` in `api/_auth-server.js` (or the `EXTRA_AUTHORIZED_PARTIES` env var, comma-separated origins)
 2. `ALLOWED` in `scripts/set-r2-cors.mjs`, then re-run it
-3. The Clerk dashboard's allowed domains
+3. The Google OAuth client's redirect URIs, if Google sign-in is on
 
 ## Repository layout
 
@@ -176,7 +177,9 @@ When adding a domain, three places need updating or authenticated requests will 
 api/
   _entitlement.js       getEntitlement() — the server-side access boundary
   _questions.js         verification pool (server-only, never import from src/)
-  audiobook/_auth.js    verifyAuth() + the shared Clerk client
+  audiobook/_auth.js    verifyAuth(): session cookie → userId
+  _auth-server.js       Better Auth config (sign-in, email, Google, rate limits)
+  _db.js, _store.js     SQLite connection; entitlement reads and writes
   audiobook/_r2.js      R2 client, getObject(), signUrl()
   audiobook/_chapters.js  chapter IDs and titles — source of truth
 src/

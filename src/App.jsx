@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react'
+import { useSession } from './lib/auth-client.js'
+import SignInScreen from './components/SignInScreen.jsx'
 import Navigation from './components/Navigation.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import CVERegister from './components/CVERegister.jsx'
@@ -14,43 +15,25 @@ const TABS = ['dashboard', 'cve', 'patches', 'scan', 'incidents', 'analyst', 'bo
 
 export default function App() {
   const [tab, setTab] = useState('dashboard')
+  const { data: session, isPending } = useSession()
+
+  if (isPending) return <div style={{ minHeight: '100dvh', background: 'var(--bg-base)' }} />
+  if (!session) return <SignInScreen />
 
   return (
-    <>
-      <SignedOut>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100dvh',
-          padding: 24,
-          // Lighter scrim than the old light-coloured cover needed — this
-          // artwork is already dark navy, so a heavy overlay crushes it to black.
-          backgroundImage: 'linear-gradient(rgba(13,17,23,0.45), rgba(13,17,23,0.65)), url(/book-cover.jpeg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}>
-          <SignIn routing="hash" />
-        </div>
-      </SignedOut>
-
-      <SignedIn>
-        <BookGate>
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg-base)' }}>
-            <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
-              {tab === 'dashboard' && <Dashboard onNavigate={setTab} />}
-              {tab === 'cve'       && <CVERegister />}
-              {tab === 'patches'   && <PatchTracker />}
-              {tab === 'scan'      && <IoCScanner />}
-              {tab === 'incidents' && <IncidentLog />}
-              {tab === 'analyst'   && <AIAnalyst />}
-              {tab === 'book'      && <Book />}
-            </main>
-            <Navigation active={tab} onSelect={setTab} />
-          </div>
-        </BookGate>
-      </SignedIn>
-    </>
+    <BookGate>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg-base)' }}>
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+          {tab === 'dashboard' && <Dashboard onNavigate={setTab} />}
+          {tab === 'cve'       && <CVERegister />}
+          {tab === 'patches'   && <PatchTracker />}
+          {tab === 'scan'      && <IoCScanner />}
+          {tab === 'incidents' && <IncidentLog />}
+          {tab === 'analyst'   && <AIAnalyst />}
+          {tab === 'book'      && <Book />}
+        </main>
+        <Navigation active={tab} onSelect={setTab} />
+      </div>
+    </BookGate>
   )
 }

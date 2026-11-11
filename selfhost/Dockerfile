@@ -4,13 +4,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# The only build-time variable; Vite inlines it into the bundle.
-ARG VITE_CLERK_PUBLISHABLE_KEY
-RUN test -n "$VITE_CLERK_PUBLISHABLE_KEY" && npm run build
+RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
+# The database (SQLite, on the lifesoc-data volume).
+RUN mkdir -p /data && chown node:node /data
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 DATA_DIR=/data
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --chown=node:node api ./api

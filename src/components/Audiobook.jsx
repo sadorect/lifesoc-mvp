@@ -1,24 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useAuth } from '@clerk/clerk-react'
 import Hls from 'hls.js'
 
 // ── API helpers ────────────────────────────────────────────────────────────
 
-function useApiGet(path, getToken) {
+function useApiGet(path) {
   const [data,    setData]  = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
     setLoading(true)
-    // Fetch a fresh token per request — Clerk session tokens expire after ~60s.
-    getToken()
-      .then(token => fetch(path, { headers: { Authorization: `Bearer ${token}` } }))
+    fetch(path)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(setData)
       .catch(e => setError(e))
       .finally(() => setLoading(false))
-  }, [path, getToken])
+  }, [path])
 
   return { data, loading, error }
 }
@@ -33,7 +30,7 @@ function loadSpeed() {
   return SPEEDS.includes(saved) ? saved : 1
 }
 
-function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
+function Player({ chapter, canDownload, onClose, onEnded }) {
   const audioRef  = useRef(null)
   const hlsRef    = useRef(null)
   const [playing,  setPlaying]  = useState(false)
@@ -54,7 +51,6 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
 
   useEffect(() => {
     if (!chapter) return
-    let cancelled = false
     const audio = audioRef.current
     const src   = `/api/audiobook/playlist?chapter=${encodeURIComponent(chapter.id)}`
 
@@ -64,49 +60,36 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
     setCurrent(0)
     setDuration(0)
 
-    // Fetch a fresh token before loading. The playlist + AES key requests fire
-    // immediately (well within the ~60s token life); segments need no token.
-    getToken().then(token => {
-      if (cancelled) return
-
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          // Attach the Clerk token ONLY to our own API (playlist + key endpoints).
-          // Segment URLs are pre-signed R2 links — adding any header there
-          // triggers a CORS preflight and conflicts with R2's signature.
-          xhrSetup(xhr, url) {
-            if (url.includes('/api/audiobook/')) {
-              xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-            }
-          },
-        })
-        hlsRef.current = hls
-        hls.loadSource(src)
-        hls.attachMedia(audio)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          setLoading(false)
-          audio.playbackRate = speed
-          audio.play().then(() => setPlaying(true)).catch(() => {})
-        })
-        hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) setError('Playback error. Please try again.')
-        })
-      } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS (Safari) — token can't be injected, so pass it as a query param
-        audio.src = `${src}&token=${encodeURIComponent(token)}`
-        audio.addEventListener('loadedmetadata', () => {
-          setLoading(false)
-          audio.playbackRate = speed
-          audio.play().then(() => setPlaying(true)).catch(() => {})
-        }, { once: true })
-      } else {
-        setError('Your browser does not support HLS playback.')
+    // The playlist and AES key are same-origin, so the session cookie
+    // authenticates them; segments are pre-signed R2 links needing nothing.
+    if (Hls.isSupported()) {
+      const hls = new Hls()
+      hlsRef.current = hls
+      hls.loadSource(src)
+      hls.attachMedia(audio)
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setLoading(false)
-      }
-    })
+        audio.playbackRate = speed
+        audio.play().then(() => setPlaying(true)).catch(() => {})
+      })
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) setError('Playback error. Please try again.')
+      })
+    } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS (Safari): sends the cookie on same-origin playlist/key requests.
+      audio.src = src
+      audio.addEventListener('loadedmetadata', () => {
+        setLoading(false)
+        audio.playbackRate = speed
+        audio.play().then(() => setPlaying(true)).catch(() => {})
+      }, { once: true })
+    } else {
+      setError('Your browser does not support HLS playback.')
+      setLoading(false)
+    }
 
-    return () => { cancelled = true; hlsRef.current?.destroy(); hlsRef.current = null }
-  }, [chapter?.id, getToken])
+    return () => { hlsRef.current?.destroy(); hlsRef.current = null }
+  }, [chapter?.id])
 
   const togglePlay = () => {
     const audio = audioRef.current
@@ -129,10 +112,7 @@ function Player({ chapter, getToken, canDownload, onClose, onEnded }) {
   }
 
   const handleDownload = async () => {
-    const token = await getToken()
-    const res  = await fetch(`/api/audiobook/download?chapter=${encodeURIComponent(chapter.id)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res  = await fetch(`/api/audiobook/download?chapter=${encodeURIComponent(chapter.id)}`)
     const { url } = await res.json()
     const a = document.createElement('a')
     a.href = url
@@ -211,11 +191,10 @@ function saveListened(set) {
 }
 
 export default function Audiobook() {
-  const { getToken } = useAuth()
   const [active,   setActive]   = useState(null)
   const [listened, setListened] = useState(loadListened)
 
-  const { data, loading, error } = useApiGet('/api/audiobook/chapters', getToken)
+  const { data, loading, error } = useApiGet('/api/audiobook/chapters')
 
   if (loading) return <div style={S.center}>Loading…</div>
   if (error)   return <div style={S.center}>Failed to load chapters.</div>
@@ -263,7 +242,6 @@ export default function Audiobook() {
       {active && (
         <Player
           chapter={active}
-          getToken={getToken}
           canDownload={canDownload}
           onClose={() => setActive(null)}
           onEnded={handleEnded}
