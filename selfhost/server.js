@@ -41,6 +41,17 @@ const app = express()
 app.disable('x-powered-by')
 app.set('trust proxy', 'loopback')
 
+// Baseline security headers (Vercel added some of these at its edge).
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('X-Frame-Options', 'DENY')                       // no clickjacking via iframes
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'")
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+  next()
+})
+
 // Uptime probe (AppDash). Deliberately touches no third party.
 app.get('/up', (req, res) => res.type('text').send('ok'))
 

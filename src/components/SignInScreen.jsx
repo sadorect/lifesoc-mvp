@@ -157,15 +157,39 @@ function describeLinkError(code, resetToken) {
   return 'Sign-in did not complete. Please try again.'
 }
 
-function Field({ label, value, onChange, hint, ...rest }) {
+function Field({ label, value, onChange, hint, type = 'text', ...rest }) {
+  const [show, setShow] = useState(false)
+  const isPassword = type === 'password'
   return (
-    <label style={S.field}>
-      <span style={S.label}>{label}</span>
-      <input value={value} onChange={e => onChange(e.target.value)} style={S.input} {...rest} />
+    <div style={S.field}>
+      <label style={S.field}>
+        <span style={S.label}>{label}</span>
+        <span style={{ position: 'relative', display: 'block' }}>
+          <input value={value} onChange={e => onChange(e.target.value)} type={isPassword && show ? 'text' : type}
+            style={{ ...S.input, width: '100%', ...(isPassword ? { paddingRight: 46 } : {}) }} {...rest} />
+          {isPassword && (
+            <button type="button" onClick={() => setShow(s => !s)} style={S.eye}
+              aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show}>
+              {show ? <EyeOff /> : <Eye />}
+            </button>
+          )}
+        </span>
+      </label>
       {hint && <span style={S.hint}>{hint}</span>}
-    </label>
+    </div>
   )
 }
+
+const Eye = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />
+  </svg>
+)
+const EyeOff = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24" /><path d="M1 1l22 22" />
+  </svg>
+)
 
 function GoogleMark() {
   return (
@@ -203,6 +227,11 @@ const S = {
     background: 'var(--bg-raised)', color: 'var(--text-1)', fontSize: 16, // 16px stops iOS zooming in
   },
   error:  { fontSize: 13, color: 'var(--red)', margin: 0 },
+  eye: {
+    position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', width: 38, height: 38,
+    display: 'grid', placeItems: 'center', background: 'none', border: 'none', borderRadius: 6,
+    color: 'var(--text-2)', cursor: 'pointer',
+  },
   button: {
     marginTop: 4, padding: '11px 0', borderRadius: 8, border: 'none',
     background: 'var(--blue)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
