@@ -9,6 +9,7 @@ import IncidentLog from './components/IncidentLog.jsx'
 import AIAnalyst from './components/AIAnalyst.jsx'
 import Book from './components/Book.jsx'
 import BookGate from './components/BookGate.jsx'
+import LegalLinks from './components/LegalLinks.jsx'
 
 const TABS = ['dashboard', 'cve', 'patches', 'scan', 'incidents', 'analyst', 'book']
 
@@ -30,8 +31,11 @@ export default function App() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
+          flexDirection: 'column',
+          gap: 16,
         }}>
           <SignIn routing="hash" />
+          <LegalLinks style={{ background: 'rgba(13,17,23,0.85)', padding: '6px 14px', borderRadius: 999 }} />
         </div>
       </SignedOut>
 

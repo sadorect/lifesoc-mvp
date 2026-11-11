@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@clerk/clerk-react'
 import { getEntitlementStatus, getRedeemChallenge, submitRedeem } from '../lib/api.js'
+import LegalLinks from './LegalLinks.jsx'
 
 export default function BookGate({ children }) {
   const { getToken } = useAuth()
@@ -92,6 +93,7 @@ function RedeemScreen({ onRedeemed }) {
         <button type="submit" style={S.button} disabled={submitting || !question}>
           {submitting ? 'Verifying…' : 'Redeem'}
         </button>
+        <LegalLinks style={{ marginTop: 8 }} />
       </form>
     </div>
   )

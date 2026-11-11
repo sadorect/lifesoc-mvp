@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getDomains, updateDomain } from '../lib/db.js'
+import LegalLinks from './LegalLinks.jsx'
 
 const SEVERITY_COLOR = score =>
   score >= 7 ? 'var(--green)' : score >= 4 ? 'var(--yellow)' : 'var(--red)'
@@ -101,6 +102,8 @@ export default function Dashboard({ onNavigate }) {
           </button>
         ))}
       </div>
+
+      <LegalLinks style={{ marginTop: 28 }} />
 
       {/* Edit drawer */}
       {editing && (
