@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSession } from './lib/auth-client.js'
-import SignInScreen from './components/SignInScreen.jsx'
+import Landing from './components/landing/Landing.jsx'
 import Admin from './components/admin/Admin.jsx'
 import Announcement, { useSite } from './components/Announcement.jsx'
 import Navigation from './components/Navigation.jsx'
@@ -21,7 +21,7 @@ export default function App() {
   const site = useSite()
 
   if (isPending) return <div style={{ minHeight: '100dvh', background: 'var(--bg-base)' }} />
-  if (!session) return <SignInScreen site={site} />
+  if (!session) return <Landing site={site} />
   if (window.location.pathname.startsWith('/admin')) return <Admin />
 
   return (
