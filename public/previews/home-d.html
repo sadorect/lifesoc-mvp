@@ -138,8 +138,19 @@
   .dossier-head img { width:120px; border-radius:4px; box-shadow:0 14px 34px rgba(0,0,0,.6); transform:rotate(-2deg); }
   .meta { font:500 11.5px/1.8 var(--mono); color:var(--t3); }
   .meta b { color:var(--t1); font-weight:500; }
-  .redact { background:var(--t1); color:transparent; border-radius:2px; padding:0 4px; cursor:pointer; transition:all .25s; user-select:none; }
-  .redact.shown, .redact:hover { background:rgba(56,139,253,.15); color:var(--t1); }
+  /* Redacted phrases: black marker bars; tap/click (or Enter) to declassify. */
+  .redact { position:relative; display:inline; padding:1px 6px; border-radius:3px; cursor:pointer; color:transparent; user-select:none;
+    background: repeating-linear-gradient(135deg, #000 0 6px, #11161d 6px 8px); box-shadow: inset 0 0 0 1px #2a313a;
+    transition: color .3s, background .3s, box-shadow .3s; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  .redact:hover, .redact:focus-visible { box-shadow: inset 0 0 0 1px var(--blue2), 0 0 0 3px rgba(56,139,253,.18); outline:none; }
+  .redact.shown { color:var(--t1); background:rgba(56,139,253,.16); box-shadow: inset 0 -2px 0 var(--blue2); cursor:default; }
+  .decl { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 16px; padding:9px 12px; border:1px dashed var(--border-hi); border-radius:8px;
+    font:500 11.5px var(--mono); color:var(--t3); letter-spacing:.03em; }
+  .decl .bar { display:inline-block; width:26px; height:10px; vertical-align:-1px; margin-right:6px; border-radius:2px; background:repeating-linear-gradient(135deg, #000 0 6px, #11161d 6px 8px); box-shadow: inset 0 0 0 1px #2a313a; }
+  .decl button { border:none; background:none; color:var(--blue2); font:600 11.5px var(--mono); cursor:pointer; padding:4px; white-space:nowrap; }
+  .decl.done { color:var(--green); border-color:rgba(63,185,80,.4); }
+  .booktitle { margin:0 0 2px; color:var(--t1); font-size:26px; font-weight:900; letter-spacing:-.6px; line-height:1.1; }
+  .booksub { margin:0 0 12px; font-size:15px; font-weight:600; color:var(--blue2); letter-spacing:-.1px; }
   .steps { list-style:none; padding:0; margin:18px 0; counter-reset:s; }
   .steps li { position:relative; padding:0 0 14px 40px; font-size:14px; }
   .steps li::before { counter-increment:s; content:"0" counter(s); position:absolute; left:0; top:0; font:700 12px var(--mono); color:var(--blue2); border:1px solid rgba(88,166,255,.4); border-radius:6px; padding:3px 6px; }
@@ -256,7 +267,7 @@
   <div class="pb">
     <span class="stamp">DECLASSIFIED</span>
     <div class="dossier-head">
-      <img src="/book-cover.jpeg" alt="Zero Trust book cover">
+      <img src="/book-cover.jpeg" alt="Zero Trust: A Hacker's Blueprint for a Secure Life, book cover">
       <div class="meta">
         <div>TITLE&nbsp;&nbsp;&nbsp;<b>Zero Trust</b></div>
         <div>AUTHOR&nbsp;&nbsp;<b>Tosin Omojola</b></div>
@@ -264,8 +275,10 @@
         <div>STATUS&nbsp;&nbsp;<b class="ok">In circulation</b></div>
       </div>
     </div>
-    <h2 id="dossier-title">The framework behind the radar</h2>
-    <p class="sub" style="margin-top:8px">Security teams stopped assuming anything inside the walls was safe. <em>Zero Trust</em> applies that thinking to everyday life: <span class="redact" tabindex="0">verify before you trust</span>, <span class="redact" tabindex="0">limit the blast radius</span>, and <span class="redact" tabindex="0">keep watching</span>.</p>
+    <h2 class="booktitle" id="dossier-title">Zero Trust</h2>
+    <p class="booksub">A Hacker's Blueprint for a Secure Life</p>
+    <div class="decl" id="decl"><span><span class="bar" aria-hidden="true"></span>3 lines redacted · tap to declassify</span><button type="button" id="decl-all">Declassify all</button></div>
+    <p class="sub">Security teams stopped assuming anything inside the walls was safe. This book applies that thinking to everyday life: <span class="redact" role="button" tabindex="0" aria-label="Redacted. Press to reveal">verify before you trust</span>, <span class="redact" role="button" tabindex="0" aria-label="Redacted. Press to reveal">limit the blast radius</span>, and <span class="redact" role="button" tabindex="0" aria-label="Redacted. Press to reveal">keep watching</span>.</p>
     <ol class="steps">
       <li><b>Create an account</b>Google, or email and a password.</li>
       <li><b>Enter your book code</b>It's printed in your copy. Answer one quick question from the book.</li>
@@ -361,7 +374,18 @@
       ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>'
       : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
   })
-  document.querySelectorAll('.redact').forEach((r) => r.addEventListener('click', () => r.classList.toggle('shown')))
+  const redacts = [...document.querySelectorAll('.redact')], decl = document.getElementById('decl')
+  function reveal(r) { r.classList.add('shown'); r.removeAttribute('role'); r.removeAttribute('aria-label'); r.tabIndex = -1; updateDecl() }
+  function updateDecl() {
+    const left = redacts.filter((r) => !r.classList.contains('shown')).length
+    decl.firstElementChild.innerHTML = left ? `<span class="bar" aria-hidden="true"></span>${left} line${left > 1 ? 's' : ''} redacted · tap to declassify` : '✓ File fully declassified'
+    decl.classList.toggle('done', !left); document.getElementById('decl-all').hidden = !left
+  }
+  redacts.forEach((r) => {
+    r.addEventListener('click', () => reveal(r))
+    r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); reveal(r) } })
+  })
+  document.getElementById('decl-all').addEventListener('click', () => redacts.forEach(reveal))
 
   // HUD clock
   const clock = document.getElementById('clock')
