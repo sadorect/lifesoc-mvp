@@ -43,7 +43,7 @@ Running only `npm run dev` will load the UI, but every API call fails — that s
 | `BETTER_AUTH_SECRET` | Signs session cookies. 32+ random bytes (`openssl rand -hex 32`); changing it signs everyone out |
 | `BETTER_AUTH_URL` | Public base URL used in email links and the Google callback (e.g. `https://www.lifesoc.app`) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional "Continue with Google". Redirect URI: `<BETTER_AUTH_URL>/api/auth/callback/google` |
-| `SMTP_URL`, `MAIL_FROM` | Verification and reset emails (e.g. `smtp://host.docker.internal:25`, `LifeSOC <no-reply@lifesoc.app>`). Unset in development: links are logged instead |
+| `SMTP_URL`, `MAIL_FROM`, `SMTP_TLS_SERVERNAME` | Verification and reset emails; `SMTP_TLS_SERVERNAME` is the name on Postfix's certificate (the container connects as `host.docker.internal`) (e.g. `smtp://host.docker.internal:25`, `LifeSOC <no-reply@lifesoc.app>`). Unset in development: links are logged instead |
 | `DATA_DIR` | Where `lifesoc.db` (SQLite) lives; `/data` in the container, `selfhost/data` locally |
 | `CLERK_SECRET_KEY` | Only for the one-off `scripts/migrate-from-clerk.mjs` |
 | `BOOK_ACCESS_CODE` | The shared code printed in the book |

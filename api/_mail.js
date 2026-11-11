@@ -1,15 +1,28 @@
 // Transactional mail (verification + password reset) through the host's Postfix.
 // SMTP_URL e.g. smtp://host.docker.internal:25 ; MAIL_FROM e.g. "LifeSOC <no-reply@lifesoc.app>".
+// SMTP_TLS_SERVERNAME: the name on Postfix's certificate. The container reaches
+// the host as host.docker.internal, so STARTTLS must ask for (and verify) the
+// box's real hostname instead.
 import './_env.js'
 import nodemailer from 'nodemailer'
 
 const FROM = process.env.MAIL_FROM ?? 'LifeSOC <no-reply@lifesoc.app>'
-const transport = process.env.SMTP_URL
-  ? nodemailer.createTransport(process.env.SMTP_URL, {
-      // Postfix's STARTTLS cert names the box's hostname, not the container's view of it.
-      tls: { rejectUnauthorized: process.env.SMTP_VERIFY_PEER === 'true' },
-    })
-  : null
+
+function smtpOptions(raw) {
+  const u = new URL(raw)
+  return {
+    host: u.hostname,
+    port: Number(u.port || (u.protocol === 'smtps:' ? 465 : 25)),
+    secure: u.protocol === 'smtps:',
+    ...(u.username ? { auth: { user: decodeURIComponent(u.username), pass: decodeURIComponent(u.password) } } : {}),
+    tls: {
+      servername: process.env.SMTP_TLS_SERVERNAME || u.hostname,
+      rejectUnauthorized: process.env.SMTP_VERIFY_PEER !== 'false',
+    },
+  }
+}
+
+const transport = process.env.SMTP_URL ? nodemailer.createTransport(smtpOptions(process.env.SMTP_URL)) : null
 
 const escape = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
