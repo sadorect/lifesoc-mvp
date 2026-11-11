@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LifeSOC">
+  <rect width="512" height="512" rx="112" fill="#0d1117"/>
+  <g transform="translate(51.2 51.2) scale(0.8)">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#1f6feb"/>
+    </linearGradient>
+  </defs>
+  <path d="M256 64 L408 118 V240 C408 342 344 414 256 452 C168 414 104 342 104 240 V118 Z" fill="url(#g)"/>
+  <path d="M256 64 L408 118 V240 C408 342 344 414 256 452 Z" fill="#000" opacity="0.10"/>
+  <path d="M136 262 H198 L224 206 L260 322 L290 232 L308 262 H376" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

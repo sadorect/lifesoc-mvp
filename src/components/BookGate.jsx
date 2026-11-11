@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession, signOut } from '../lib/auth-client.js'
 import { getEntitlementStatus, getRedeemChallenge, submitRedeem } from '../lib/api.js'
+import LegalLinks from './LegalLinks.jsx'
 
 export default function BookGate({ children }) {
   const [status, setStatus] = useState(null) // null (loading) | 'none' | 'expired' | 'active'
@@ -87,6 +88,7 @@ function RedeemScreen({ onRedeemed }) {
         <button type="submit" style={S.button} disabled={submitting || !question}>
           {submitting ? 'Verifying…' : 'Redeem'}
         </button>
+        <LegalLinks style={{ marginTop: 8 }} />
         <SignedInAs />
       </form>
     </div>

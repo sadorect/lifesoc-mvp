@@ -78,6 +78,14 @@ app.use(express.static(dist, {
   },
 }))
 
+// Legal pages: static files with clean URLs (also in the service worker's denylist).
+for (const page of ['privacy', 'terms']) {
+  app.get(`/${page}`, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache')
+    res.sendFile(`${dist}/${page}.html`)
+  })
+}
+
 // Server-handled links (the service worker's navigateFallbackDenylist) never get the shell.
 app.use('/download', (req, res) => res.status(404).type('text').send('Not found'))
 

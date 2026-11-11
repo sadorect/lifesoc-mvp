@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { signIn, signUp, requestPasswordReset, resetPassword, getAuthConfig } from '../lib/auth-client.js'
+import LegalLinks from './LegalLinks.jsx'
 
 // Sign-in, sign-up, forgot and reset password, over the book cover.
 // Reset links land on /reset-password?token=… (the server serves the app shell there).
@@ -74,7 +75,10 @@ export default function SignInScreen() {
   return (
     <div style={S.backdrop}>
       <div style={S.card}>
-        <p style={S.brand}>LifeSOC</p>
+        <p style={S.brand}>
+          <img src="/logo-mark.svg" alt="" width="28" height="28" />
+          <span>Life<span style={{ color: 'var(--blue)' }}>SOC</span></span>
+        </p>
 
         {(mode === 'sent' || mode === 'done') ? (
           <>
@@ -132,6 +136,7 @@ export default function SignInScreen() {
           </form>
         )}
       </div>
+      <LegalLinks style={{ background: 'rgba(13,17,23,0.85)', padding: '6px 14px', borderRadius: 999 }} />
     </div>
   )
 }
@@ -169,7 +174,7 @@ function GoogleMark() {
 
 const S = {
   backdrop: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16,
     minHeight: '100dvh', padding: 16,
     // Light scrim: the cover artwork is already dark navy.
     backgroundImage: 'linear-gradient(rgba(13,17,23,0.45), rgba(13,17,23,0.65)), url(/book-cover.jpeg)',
@@ -181,7 +186,7 @@ const S = {
     borderRadius: 12, padding: 24, boxShadow: '0 12px 40px rgba(0,0,0,0.45)',
   },
   form:   { display: 'flex', flexDirection: 'column', gap: 12 },
-  brand:  { fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', margin: '0 0 4px' },
+  brand:  { display: 'flex', alignItems: 'center', gap: 8, fontSize: 17, fontWeight: 700, letterSpacing: '-0.2px', color: 'var(--text-1)', margin: '0 0 12px' },
   title:  { fontSize: 20, fontWeight: 600, color: 'var(--text-1)', margin: '0 0 4px' },
   text:   { fontSize: 14, lineHeight: 1.5, color: 'var(--text-2)', margin: '0 0 8px' },
   field:  { display: 'flex', flexDirection: 'column', gap: 6 },
