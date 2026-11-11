@@ -98,10 +98,13 @@ function RedeemScreen({ onRedeemed }) {
 // Lets someone who signed in with the wrong account get back out.
 function SignedInAs() {
   const { data: session } = useSession()
+  const [isAdmin, setIsAdmin] = useState(false)
+  useEffect(() => { fetch('/api/admin/me').then((r) => setIsAdmin(r.ok)).catch(() => {}) }, [])
   return (
     <p style={S.who}>
       Signed in as {session?.user?.email}.{' '}
       <button type="button" style={S.linkBtn} onClick={() => signOut()}>Sign out</button>
+      {isAdmin && <>{' · '}<a href="/admin" style={{ ...S.linkBtn, textDecoration: 'none' }}>Admin</a></>}
     </p>
   )
 }

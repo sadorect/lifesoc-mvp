@@ -1,6 +1,7 @@
 import './_env.js'
 import { verifyAuth }     from './audiobook/_auth.js'
 import { getEntitlement } from './_entitlement.js'
+import { logUsage }       from './_usage.js'
 
 const SCAN_PROMPT = `You are the LifeSOC IoC Scanner. Analyse the user's description for Indicators of Compromise (IoCs) — early warning signals that a life domain breach may be developing.
 
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
   if (!input?.trim()) return res.status(400).json({ error: 'input required' })
 
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
+  logUsage(userId, 'scan')
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

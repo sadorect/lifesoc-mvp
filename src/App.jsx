@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useSession } from './lib/auth-client.js'
 import SignInScreen from './components/SignInScreen.jsx'
+import Admin from './components/admin/Admin.jsx'
+import Announcement, { useSite } from './components/Announcement.jsx'
 import Navigation from './components/Navigation.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import CVERegister from './components/CVERegister.jsx'
@@ -16,13 +18,16 @@ const TABS = ['dashboard', 'cve', 'patches', 'scan', 'incidents', 'analyst', 'bo
 export default function App() {
   const [tab, setTab] = useState('dashboard')
   const { data: session, isPending } = useSession()
+  const site = useSite()
 
   if (isPending) return <div style={{ minHeight: '100dvh', background: 'var(--bg-base)' }} />
-  if (!session) return <SignInScreen />
+  if (!session) return <SignInScreen site={site} />
+  if (window.location.pathname.startsWith('/admin')) return <Admin />
 
   return (
     <BookGate>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg-base)' }}>
+        <Announcement text={site.announcement} />
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
           {tab === 'dashboard' && <Dashboard onNavigate={setTab} />}
           {tab === 'cve'       && <CVERegister />}

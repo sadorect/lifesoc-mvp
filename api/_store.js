@@ -38,7 +38,7 @@ const upsertReader = db.prepare(`
   VALUES (@userId, 1, @redeemedAt)
   ON CONFLICT (user_id) DO UPDATE SET
     book_redeemed = 1, redeemed_at = excluded.redeemed_at,
-    access_type = NULL, reviewer = NULL, reviewer_code = NULL,
+    access_type = NULL, reviewer = NULL, reviewer_code = NULL, access_until = NULL,
     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 `)
 

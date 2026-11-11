@@ -1,6 +1,7 @@
 import './_env.js'
 import { verifyAuth }     from './audiobook/_auth.js'
 import { getEntitlement } from './_entitlement.js'
+import { logUsage }       from './_usage.js'
 
 // Cheap, no-API-call heuristic to short-circuit obvious off-topic abuse
 // (using this as a free general-purpose assistant) before spending on a
@@ -90,6 +91,7 @@ export default async function handler(req, res) {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
+  logUsage(userId, 'chat')
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

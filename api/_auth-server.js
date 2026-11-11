@@ -3,10 +3,12 @@
 import './_env.js'
 import bcrypt from 'bcryptjs'
 import { betterAuth } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import { hashPassword, verifyPassword } from 'better-auth/crypto'
 import { getMigrations } from 'better-auth/db/migration'
 import { db } from './_db.js'
 import { sendMail } from './_mail.js'
+import { signupsPaused } from './_settings.js'
 
 if (!process.env.BETTER_AUTH_SECRET) throw new Error('Missing BETTER_AUTH_SECRET')
 
@@ -77,6 +79,17 @@ export const auth = betterAuth({
   account: {
     // "Continue with Google" lands on the existing account with the same verified email.
     accountLinking: { enabled: true, trustedProviders: ['google'] },
+  },
+
+  // Admin setting: pause new accounts (email and Google). Existing readers are unaffected.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async () => {
+          if (signupsPaused()) throw new APIError('FORBIDDEN', { message: 'New sign-ups are paused', code: 'SIGNUPS_PAUSED' })
+        },
+      },
+    },
   },
 
   session: {

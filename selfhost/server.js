@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { toNodeHandler } from 'better-auth/node'
 import { auth, googleEnabled } from '../api/_auth-server.js'
+import adminRouter from '../api/admin.js'
+import { getSetting, signupsPaused } from '../api/_settings.js'
 
 import chat from '../api/chat.js'
 import scan from '../api/scan.js'
@@ -58,6 +60,13 @@ app.get('/api/auth-config', (req, res) => res.json({ google: googleEnabled }))
 app.all('/api/auth/*splat', toNodeHandler(auth))
 
 app.use(express.json({ limit: '1mb' }))
+
+// Admin (ADMIN_EMAILS only) and the public bits of the site settings.
+app.use('/api/admin', adminRouter)
+app.get('/api/site', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store')
+  res.json({ announcement: getSetting('announcement'), signupsPaused: signupsPaused() })
+})
 
 // Handlers check req.method themselves, as they did on Vercel.
 for (const [path, handler] of Object.entries(routes)) app.all(path, handler)

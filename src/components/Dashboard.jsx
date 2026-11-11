@@ -14,6 +14,8 @@ const POSTURE_LABEL = avg =>
 
 export default function Dashboard({ onNavigate }) {
   const { data: session } = useSession()
+  const [isAdmin, setIsAdmin] = useState(false)
+  useEffect(() => { fetch('/api/admin/me').then((r) => setIsAdmin(r.ok)).catch(() => {}) }, [])
   const [domains, setDomains] = useState([])
   const [editing, setEditing] = useState(null)
   const [editScore, setEditScore] = useState(5)
@@ -110,9 +112,12 @@ export default function Dashboard({ onNavigate }) {
         <span style={{ fontSize: 12, color: 'var(--text-3)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {session?.user?.email}
         </span>
-        <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }} onClick={() => signOut()}>
-          Sign out
-        </button>
+        <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          {isAdmin && <a className="btn btn-ghost" href="/admin" style={{ padding: '6px 12px', fontSize: 13, textDecoration: 'none' }}>Admin</a>}
+          <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => signOut()}>
+            Sign out
+          </button>
+        </span>
       </div>
 
       <LegalLinks style={{ marginTop: 28 }} />

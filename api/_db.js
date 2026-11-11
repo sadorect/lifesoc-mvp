@@ -29,3 +29,39 @@ db.exec(`
     updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )
 `)
+
+// Admin-managed data (2026-11-11).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS setting (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+  CREATE TABLE IF NOT EXISTS reviewer_code (
+    code       TEXT PRIMARY KEY,           -- stored normalised (lowercase, trimmed)
+    name       TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    revoked_at TEXT
+  );
+  -- One row per counted action, for the admin overview (no content is stored).
+  CREATE TABLE IF NOT EXISTS usage_event (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT,
+    kind    TEXT NOT NULL,                  -- chat | scan | redeem
+    at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+  CREATE INDEX IF NOT EXISTS usage_event_at ON usage_event (at);
+  CREATE TABLE IF NOT EXISTS admin_audit (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    admin  TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target TEXT,
+    detail TEXT
+  );
+`)
+
+// Manual access extensions override the default 365 days from redemption.
+if (!db.prepare('PRAGMA table_info(entitlement)').all().some((c) => c.name === 'access_until')) {
+  db.exec('ALTER TABLE entitlement ADD COLUMN access_until TEXT')
+}

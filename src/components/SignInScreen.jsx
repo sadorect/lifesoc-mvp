@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { signIn, signUp, requestPasswordReset, resetPassword, getAuthConfig } from '../lib/auth-client.js'
 import LegalLinks from './LegalLinks.jsx'
+import Announcement from './Announcement.jsx'
 
 // Sign-in, sign-up, forgot and reset password, over the book cover.
 // Reset links land on /reset-password?token=… (the server serves the app shell there).
-export default function SignInScreen() {
+export default function SignInScreen({ site = {} }) {
+  const paused = !!site.signupsPaused
   const params = new URLSearchParams(window.location.search)
   const resetToken = window.location.pathname === '/reset-password' ? params.get('token') : null
   const linkError = params.get('error')
@@ -74,6 +76,7 @@ export default function SignInScreen() {
 
   return (
     <div style={S.backdrop}>
+      <Announcement text={site.announcement} floating />
       <div style={S.card}>
         <p style={S.brand}>
           <img src="/logo-mark.svg" alt="" width="28" height="28" />
@@ -124,7 +127,9 @@ export default function SignInScreen() {
             {mode === 'signin' && (
               <>
                 <button type="button" style={S.link} onClick={() => go('forgot')}>Forgot password?</button>
-                <p style={S.switch}>New here? <button type="button" style={S.inlineLink} onClick={() => go('signup')}>Create an account</button></p>
+                {paused
+                  ? <p style={S.switch}>New sign-ups are paused right now. Existing readers can sign in as usual.</p>
+                  : <p style={S.switch}>New here? <button type="button" style={S.inlineLink} onClick={() => go('signup')}>Create an account</button></p>}
               </>
             )}
             {mode === 'signup' && (
@@ -148,6 +153,7 @@ function describeLinkError(code, resetToken) {
   if (!code) return null
   if (resetToken !== null || window.location.pathname === '/reset-password') return 'That reset link has expired or was already used. Ask for a new one.'
   if (/token/i.test(code)) return 'That link has expired or was already used. Sign in and we will send a fresh one.'
+  if (/paused|unable_to_create_user|signup/i.test(code)) return 'New sign-ups are paused right now, so a new account could not be created.'
   return 'Sign-in did not complete. Please try again.'
 }
 
