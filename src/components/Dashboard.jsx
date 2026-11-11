@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getDomains, updateDomain } from '../lib/db.js'
 import { useSession, signOut } from '../lib/auth-client.js'
 import LegalLinks from './LegalLinks.jsx'
+import { TalkButton, useMessages } from './Messages.jsx'
 
 const SEVERITY_COLOR = score =>
   score >= 7 ? 'var(--green)' : score >= 4 ? 'var(--yellow)' : 'var(--red)'
@@ -15,6 +16,7 @@ const POSTURE_LABEL = avg =>
 export default function Dashboard({ onNavigate }) {
   const { data: session } = useSession()
   const [isAdmin, setIsAdmin] = useState(false)
+  const messages = useMessages()
   useEffect(() => { fetch('/api/admin/me').then((r) => setIsAdmin(r.ok)).catch(() => {}) }, [])
   const [domains, setDomains] = useState([])
   const [editing, setEditing] = useState(null)
@@ -105,6 +107,15 @@ export default function Dashboard({ onNavigate }) {
             <span>{a.icon}</span><span>{a.label}</span>
           </button>
         ))}
+      </div>
+
+      {/* Talk to the author */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 24, padding: 14, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-1)' }}>{messages.unread ? 'Tosin replied to you' : 'Questions about the book?'}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{messages.unread ? 'Open your messages to read the reply.' : 'Ask Tosin or share feedback.'}</div>
+        </div>
+        <TalkButton onClick={messages.open} unread={messages.unread} style={{ padding: '8px 12px', fontSize: 13, flexShrink: 0 }} />
       </div>
 
       {/* Account */}

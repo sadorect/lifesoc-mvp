@@ -3,6 +3,7 @@ import { useSession } from './lib/auth-client.js'
 import Landing from './components/landing/Landing.jsx'
 import Admin from './components/admin/Admin.jsx'
 import Announcement, { useSite } from './components/Announcement.jsx'
+import { MessagesProvider } from './components/Messages.jsx'
 import Navigation from './components/Navigation.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import CVERegister from './components/CVERegister.jsx'
@@ -25,6 +26,7 @@ export default function App() {
   if (window.location.pathname.startsWith('/admin')) return <Admin />
 
   return (
+    <MessagesProvider>
     <BookGate>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg-base)' }}>
         <Announcement text={site.announcement} />
@@ -40,5 +42,6 @@ export default function App() {
         <Navigation active={tab} onSelect={setTab} />
       </div>
     </BookGate>
+    </MessagesProvider>
   )
 }

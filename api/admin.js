@@ -8,6 +8,7 @@ import { expiryOf, statusOf } from './_entitlement.js'
 import QRCode from 'qrcode'
 import { getAllSettings, setSettings, cleanUrl } from './_settings.js'
 import { listReviewers, redeemersOf, addReviewer, setReviewerRevoked, normalize } from './_reviewers.js'
+import { repliesFor, notifyReader } from './_messages.js'
 
 const DAY = 24 * 60 * 60 * 1000
 const publicBase = () => (process.env.BETTER_AUTH_URL || 'https://www.lifesoc.app').replace(/\/$/, '')
@@ -52,6 +53,7 @@ router.get('/overview', (req, res) => {
     active7: count('SELECT count(DISTINCT userId) n FROM session WHERE updatedAt >= ?', since(7)),
     chat7: count("SELECT count(*) n FROM usage_event WHERE kind = 'chat' AND at >= ?", since(7)),
     scan7: count("SELECT count(*) n FROM usage_event WHERE kind = 'scan' AND at >= ?", since(7)),
+    messagesNew: count("SELECT count(*) n FROM message WHERE status = 'new'"),
     book7: count("SELECT count(*) n FROM usage_event WHERE kind = 'book' AND at >= ?", since(7)),
     expiringSoon: ents.filter((e, i) => statuses[i] === 'active' && expiryOf(e) && expiryOf(e) - now < 30 * DAY).length,
   }
@@ -189,6 +191,53 @@ for (const op of ['revoke', 'restore']) {
     res.json({ ok: true })
   })
 }
+
+// ── Inbox (reader feedback & questions) ─────────────────────────────────────
+router.get('/messages', (req, res) => {
+  const status = ['new', 'answered', 'archived'].includes(req.query.status) ? req.query.status : null
+  const type = ['feedback', 'question', 'problem'].includes(req.query.type) ? req.query.type : null
+  const where = [status && 'm.status = @status', type && 'm.type = @type'].filter(Boolean)
+  const rows = db.prepare(`SELECT m.*, u.name AS user_name, u.email AS user_email FROM message m JOIN "user" u ON u.id = m.user_id
+    ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY (m.status = 'new') DESC, m.updated_at DESC LIMIT 200`).all({ status, type })
+  const replies = repliesFor(rows.map((r) => r.id))
+  const counts = Object.fromEntries(db.prepare('SELECT status, count(*) n FROM message GROUP BY status').all().map((r) => [r.status, r.n]))
+  const ratings = db.prepare("SELECT count(*) n, avg(rating) avg FROM message WHERE type = 'feedback' AND rating IS NOT NULL").get()
+  res.json({
+    messages: rows.map((m) => ({
+      id: m.id, type: m.type, rating: m.rating, chapter: m.chapter, body: m.body, status: m.status, createdAt: m.created_at, updatedAt: m.updated_at,
+      meta: m.meta ? JSON.parse(m.meta) : null, user: { id: m.user_id, name: m.user_name, email: m.user_email }, replies: replies[m.id] ?? [],
+    })),
+    counts: { new: counts.new ?? 0, answered: counts.answered ?? 0, archived: counts.archived ?? 0 },
+    ratings: { count: ratings.n, average: ratings.avg ? Math.round(ratings.avg * 10) / 10 : null },
+  })
+})
+
+router.post('/messages/:id/reply', wrap(async (req, res) => {
+  const m = db.prepare('SELECT m.*, u.name AS user_name, u.email AS user_email FROM message m JOIN "user" u ON u.id = m.user_id WHERE m.id = ?').get(Number(req.params.id))
+  if (!m) return res.status(404).json({ error: 'Message not found' })
+  const text = String(req.body?.body ?? '').trim()
+  if (text.length < 2) return res.status(400).json({ error: 'Write a reply first' })
+  if (text.length > 8000) return res.status(400).json({ error: 'Reply is too long' })
+  const now = new Date().toISOString()
+  db.transaction(() => {
+    db.prepare("INSERT INTO message_reply (message_id, author, body) VALUES (?, 'admin', ?)").run(m.id, text)
+    db.prepare("UPDATE message SET status = 'answered', updated_at = ? WHERE id = ?").run(now, m.id)
+  })()
+  let emailed = true
+  try { await notifyReader({ email: m.user_email, name: m.user_name, original: m.body, reply: text }) }
+  catch (e) { emailed = false; console.error('[admin] reply email failed:', e.message) }
+  log(req, 'message.reply', m.user_email, { message: m.id, emailed })
+  res.json({ ok: true, emailed })
+}))
+
+router.post('/messages/:id/status', (req, res) => {
+  const status = req.body?.status
+  if (!['new', 'answered', 'archived'].includes(status)) return res.status(400).json({ error: 'Unknown status' })
+  const r = db.prepare('UPDATE message SET status = ?, updated_at = ? WHERE id = ?').run(status, new Date().toISOString(), Number(req.params.id))
+  if (!r.changes) return res.status(404).json({ error: 'Message not found' })
+  log(req, `message.${status}`, String(req.params.id))
+  res.json({ ok: true })
+})
 
 // ── Settings ────────────────────────────────────────────────────────────────
 router.get('/settings', (req, res) => res.json({

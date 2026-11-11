@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession, signOut } from '../lib/auth-client.js'
 import { getEntitlementStatus, getRedeemChallenge, submitRedeem } from '../lib/api.js'
 import LegalLinks from './LegalLinks.jsx'
+import { useMessages } from './Messages.jsx'
 
 export default function BookGate({ children }) {
   const [status, setStatus] = useState(null) // null (loading) | 'none' | 'expired' | 'active'
@@ -98,6 +99,7 @@ function RedeemScreen({ onRedeemed }) {
 // Lets someone who signed in with the wrong account get back out.
 function SignedInAs() {
   const { data: session } = useSession()
+  const messages = useMessages()
   const [isAdmin, setIsAdmin] = useState(false)
   useEffect(() => { fetch('/api/admin/me').then((r) => setIsAdmin(r.ok)).catch(() => {}) }, [])
   return (
@@ -105,6 +107,7 @@ function SignedInAs() {
       Signed in as {session?.user?.email}.{' '}
       <button type="button" style={S.linkBtn} onClick={() => signOut()}>Sign out</button>
       {isAdmin && <>{' · '}<a href="/admin" style={{ ...S.linkBtn, textDecoration: 'none' }}>Admin</a></>}
+      <br /><button type="button" style={{ ...S.linkBtn, marginTop: 6 }} onClick={messages.open}>Questions? Talk to the author{messages.unread ? ` (${messages.unread} new)` : ''}</button>
     </p>
   )
 }

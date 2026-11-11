@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import Audiobook from './Audiobook.jsx'
 import EbookReader from './EbookReader.jsx'
+import { TalkButton, useMessages } from './Messages.jsx'
 
 export default function Book() {
   const [mode, setMode] = useState('listen') // 'listen' | 'read'
+  const messages = useMessages()
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -22,6 +24,9 @@ export default function Book() {
           >
             📖 Read
           </button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+          <TalkButton onClick={messages.open} unread={messages.unread} style={{ padding: '7px 12px', fontSize: 13 }} />
         </div>
       </div>
 

@@ -65,3 +65,30 @@ db.exec(`
 if (!db.prepare('PRAGMA table_info(entitlement)').all().some((c) => c.name === 'access_until')) {
   db.exec('ALTER TABLE entitlement ADD COLUMN access_until TEXT')
 }
+
+// Reader feedback and questions (2026-11-11).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS message (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id        TEXT NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
+    type           TEXT NOT NULL,                -- feedback | question | problem
+    rating         INTEGER,                      -- 1..5, feedback only
+    chapter        TEXT,
+    body           TEXT NOT NULL,
+    meta           TEXT,                         -- problem reports: device/browser
+    status         TEXT NOT NULL DEFAULT 'new',  -- new | answered | archived
+    created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    reader_seen_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS message_user ON message (user_id);
+  CREATE INDEX IF NOT EXISTS message_status ON message (status, updated_at);
+  CREATE TABLE IF NOT EXISTS message_reply (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id INTEGER NOT NULL REFERENCES message (id) ON DELETE CASCADE,
+    author     TEXT NOT NULL,                    -- admin | reader
+    body       TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+  CREATE INDEX IF NOT EXISTS message_reply_msg ON message_reply (message_id);
+`)

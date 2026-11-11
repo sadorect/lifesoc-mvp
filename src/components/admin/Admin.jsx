@@ -16,6 +16,7 @@ async function api(path, { method = 'GET', body } = {}) {
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'inbox', label: 'Inbox' },
   { id: 'users', label: 'Users' },
   { id: 'reviewers', label: 'Reviewer codes' },
   { id: 'settings', label: 'Settings' },
@@ -64,6 +65,7 @@ export default function Admin() {
       </header>
       <main style={S.main}>
         {tab === 'overview' && <Overview />}
+        {tab === 'inbox' && <Inbox notify={notify} />}
         {tab === 'users' && <Users me={me} notify={notify} />}
         {tab === 'reviewers' && <Reviewers notify={notify} />}
         {tab === 'settings' && <Settings notify={notify} />}
@@ -82,6 +84,7 @@ function Overview() {
   if (!data) return <p style={S.muted}>Loading…</p>
   const t = data.totals
   const tiles = [
+    ['New messages', t.messagesNew, 'waiting in the Inbox'],
     ['Readers', t.users, `${t.verified} with confirmed email`],
     ['Active book access', t.activeAccess, `${plural(t.reviewers, 'reviewer')} · ${t.expiredAccess} expired`],
     ['Expiring in 30 days', t.expiringSoon, 'active readers'],
@@ -136,7 +139,8 @@ function Bars({ label, values, days, color }) {
 const ACTION_LABELS = {
   'access.grant': 'Granted access', 'access.extend': 'Extended access', 'access.revoke': 'Revoked access',
   'access.downloads': 'Changed downloads', 'email.verification': 'Resent confirmation', 'email.password_reset': 'Sent password reset',
-  'sessions.revoke': 'Signed out everywhere', 'user.delete': 'Deleted account', 'reviewer.add': 'Added reviewer code',
+  'sessions.revoke': 'Signed out everywhere', 'user.delete': 'Deleted account', 'message.reply': 'Replied to a reader', 'message.archived': 'Archived a message', 'message.new': 'Reopened a message', 'message.answered': 'Marked answered',
+  'reviewer.add': 'Added reviewer code',
   'reviewer.revoke': 'Revoked reviewer code', 'reviewer.restore': 'Restored reviewer code', 'settings.update': 'Updated settings',
 }
 
@@ -150,6 +154,92 @@ function AuditList({ rows }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+// ── Inbox ───────────────────────────────────────────────────────────────────
+const MSG_TYPE = { question: ['Question', 'var(--blue)', 'var(--blue-dim)'], feedback: ['Feedback', 'var(--green)', 'var(--green-dim)'], problem: ['Problem', 'var(--red)', 'var(--red-dim)'] }
+
+function Inbox({ notify }) {
+  const [status, setStatus] = useState('new')
+  const [type, setType] = useState('')
+  const [data, setData] = useState(null)
+  const load = useCallback(() => {
+    const q = new URLSearchParams(); if (status) q.set('status', status); if (type) q.set('type', type)
+    return api(`/messages?${q}`).then(setData).catch((e) => notify(e.message, 'err'))
+  }, [status, type, notify])
+  useEffect(() => { load() }, [load])
+
+  return (
+    <>
+      {data && (
+        <div style={S.tiles}>
+          <div style={S.tile}><div style={S.tileLabel}>New</div><div style={S.tileValue}>{data.counts.new}</div><div style={S.tileSub}>waiting for a reply</div></div>
+          <div style={S.tile}><div style={S.tileLabel}>Answered</div><div style={S.tileValue}>{data.counts.answered}</div><div style={S.tileSub}>{data.counts.archived} archived</div></div>
+          <div style={S.tile}><div style={S.tileLabel}>Book rating</div><div style={S.tileValue}>{data.ratings.average ?? '–'}{data.ratings.average ? <span style={{ fontSize: 16, color: 'var(--yellow)' }}> ★</span> : null}</div><div style={S.tileSub}>{plural(data.ratings.count, 'rating')}</div></div>
+        </div>
+      )}
+      <div style={S.toolbar}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ ...S.input, width: 'auto' }} aria-label="Status">
+          <option value="new">New</option><option value="answered">Answered</option><option value="archived">Archived</option><option value="">All</option>
+        </select>
+        <select value={type} onChange={(e) => setType(e.target.value)} style={{ ...S.input, width: 'auto' }} aria-label="Type">
+          <option value="">All types</option><option value="question">Questions</option><option value="feedback">Feedback</option><option value="problem">Problems</option>
+        </select>
+      </div>
+      {!data ? <p style={S.muted}>Loading…</p> : data.messages.length === 0
+        ? <div style={{ ...S.card, textAlign: 'center' }}><p style={S.muted}>{status === 'new' ? 'Nothing waiting. Inbox zero.' : 'No messages here.'}</p></div>
+        : data.messages.map((m) => <InboxItem key={m.id} m={m} notify={notify} reload={load} />)}
+    </>
+  )
+}
+
+function InboxItem({ m, notify, reload }) {
+  const [reply, setReply] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [label, fg, bg] = MSG_TYPE[m.type] ?? MSG_TYPE.question
+  const send = async () => {
+    setBusy(true)
+    try {
+      const r = await api(`/messages/${m.id}/reply`, { method: 'POST', body: { body: reply } })
+      notify(r.emailed ? 'Reply sent by email and in the app' : "Reply saved in the app, but the email couldn't be sent", r.emailed ? 'ok' : 'err')
+      setReply(''); reload()
+    } catch (e) { notify(e.message, 'err') } finally { setBusy(false) }
+  }
+  const setStatus = async (status) => {
+    try { await api(`/messages/${m.id}/status`, { method: 'POST', body: { status } }); notify(status === 'archived' ? 'Archived' : status === 'new' ? 'Moved back to New' : 'Marked answered'); reload() }
+    catch (e) { notify(e.message, 'err') }
+  }
+  return (
+    <div style={{ ...S.card, ...(m.status === 'new' ? { borderColor: 'var(--blue-dim)' } : {}) }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        <span style={{ ...S.pill, color: fg, background: bg }}>{label}</span>
+        {m.rating ? <span style={{ color: 'var(--yellow)', fontSize: 14, letterSpacing: 1 }} aria-label={`${m.rating} of 5 stars`}>{'★'.repeat(m.rating)}<span style={{ color: 'var(--border-hi)' }}>{'★'.repeat(5 - m.rating)}</span></span> : null}
+        {m.chapter && <span style={{ fontSize: 12, color: 'var(--text-2)' }}>· {m.chapter}</span>}
+        <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-3)' }}>{ago(m.updatedAt)}</span>
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 8 }}><b style={{ color: 'var(--text-1)' }}>{m.user.name || m.user.email.split('@')[0]}</b> · {m.user.email}</div>
+      <Msg body={m.body} />
+      {m.replies.map((r) => <Msg key={r.id} body={r.body} who={r.author === 'admin' ? 'You' : m.user.name || 'Reader'} at={r.createdAt} mine={r.author === 'admin'} />)}
+      {m.meta && <p style={{ ...S.muted, fontSize: 11, marginTop: 8, overflowWrap: 'anywhere' }}>Device: {m.meta.ua}{m.meta.screen ? ` · ${m.meta.screen}` : ''}{m.meta.standalone ? ' · installed app' : ''}</p>}
+      <textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder={`Reply to ${m.user.name || 'the reader'}… (they get it by email and in the app)`}
+        style={{ ...S.input, width: '100%', marginTop: 10, resize: 'vertical' }} maxLength={8000} />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        <button style={S.primary} disabled={busy || reply.trim().length < 2} onClick={send}>{busy ? 'Sending…' : 'Send reply'}</button>
+        {m.status !== 'archived' && <Btn onClick={() => setStatus('archived')}>Archive</Btn>}
+        {m.status !== 'new' && <Btn onClick={() => setStatus('new')}>Move to New</Btn>}
+        {m.status === 'new' && <Btn onClick={() => setStatus('answered')}>Mark answered</Btn>}
+      </div>
+    </div>
+  )
+}
+
+function Msg({ body, who, at, mine }) {
+  return (
+    <div style={{ padding: '9px 11px', borderRadius: 10, background: mine ? 'var(--blue-dim)' : 'var(--bg-raised)', marginTop: 6, marginLeft: mine ? 24 : 0 }}>
+      {who && <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 3 }}>{who} · {ago(at)}</div>}
+      <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: 'var(--text-1)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>{body}</div>
+    </div>
   )
 }
 
