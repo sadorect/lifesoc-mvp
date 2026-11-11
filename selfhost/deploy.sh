@@ -41,8 +41,16 @@ echo "Deploying $(git -C .. rev-parse --short HEAD)"
 mkdir -p data/backups
 if [[ -f data/lifesoc.db ]]; then
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  $DOCKER exec lifesoc node -e "require('better-sqlite3')('/data/lifesoc.db').backup('/data/backups/pre-deploy-$stamp.db').then(()=>console.log('DB backed up: data/backups/pre-deploy-$stamp.db'))" \
-    || { echo "Database backup failed; not deploying." >&2; exit 1; }
+  if $DOCKER inspect lifesoc --format '{{range .Mounts}}{{.Destination}} {{end}}' 2>/dev/null | grep -qw /data; then
+    $DOCKER exec lifesoc node -e "require('better-sqlite3')('/data/lifesoc.db').backup('/data/backups/pre-deploy-$stamp.db').then(()=>console.log('DB backed up: data/backups/pre-deploy-$stamp.db'))" \
+      || { echo "Database backup failed; not deploying." >&2; exit 1; }
+  else
+    # The running container doesn't use the database (first switch from the
+    # Clerk build), so nothing has it open: a plain copy is consistent.
+    cp -p data/lifesoc.db "data/backups/pre-deploy-$stamp.db"
+    for ext in -wal -shm; do [[ -f "data/lifesoc.db$ext" ]] && cp -p "data/lifesoc.db$ext" "data/backups/pre-deploy-$stamp.db$ext"; done
+    echo "DB copied: data/backups/pre-deploy-$stamp.db"
+  fi
   ls -1t data/backups/pre-deploy-*.db | tail -n +11 | xargs -r rm -f   # keep the last 10
 fi
 
