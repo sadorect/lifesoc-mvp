@@ -34,7 +34,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // Server-handled links must reach the network, not the SPA shell.
-        navigateFallbackDenylist: [/^\/download\//, /^\/api\//, /^\/(privacy|terms)(\/|$)/],
+        navigateFallbackDenylist: [/^\/download\//, /^\/api\//, /^\/(privacy|terms)(\/|$)/, /^\/previews\//],
+        globIgnores: ['previews/**'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

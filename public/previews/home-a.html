@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0d1117">
+<title>Preview A · Landing page · LifeSOC</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0d1117; --surface:#161b22; --raised:#21262d; --border:#30363d; --t1:#e6edf3; --t2:#9da7b3; --t3:#6e7681; --blue:#388bfd; --blue2:#58a6ff; --green:#3fb950; --yellow:#d29922; --red:#f85149; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--t2); font:16px/1.6 Inter, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; }
+  .preview-bar { position:sticky; top:0; z-index:10; display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap; padding:8px 16px; background:#1f6feb; color:#fff; font-size:13px; font-weight:500; }
+  .preview-bar a { color:#fff; opacity:.85; } .preview-bar a[aria-current] { opacity:1; font-weight:700; text-decoration:none; }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 20px; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:19px; color:var(--t1); text-decoration:none; letter-spacing:-.2px; }
+  .brand b { color:var(--blue); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 20px; border-radius:10px; font-weight:600; font-size:15px; text-decoration:none; border:1px solid transparent; cursor:pointer; }
+  .btn-primary { background:var(--blue); color:#fff; }
+  .btn-ghost { border-color:var(--border); color:var(--t1); background:var(--surface); }
+  .hero { display:grid; grid-template-columns:1.1fr .9fr; gap:48px; align-items:center; padding:56px 0 72px; }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--blue2); background:rgba(56,139,253,.12); border:1px solid rgba(56,139,253,.3); padding:5px 12px; border-radius:999px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px rgba(63,185,80,.18); }
+  h1 { color:var(--t1); font-size:clamp(36px,5.4vw,58px); line-height:1.05; letter-spacing:-1.6px; margin:18px 0 18px; font-weight:800; }
+  h1 em { font-style:normal; background:linear-gradient(90deg,var(--blue2),#a5d6ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .lead { font-size:18px; max-width:520px; margin:0 0 28px; }
+  .cta { display:flex; gap:12px; flex-wrap:wrap; }
+  .fine { font-size:13px; color:var(--t3); margin-top:14px; }
+  /* phone mock */
+  .phone { justify-self:center; width:300px; border-radius:36px; padding:12px; background:#05070a; border:1px solid var(--border); box-shadow:0 30px 80px rgba(31,111,235,.25), 0 0 0 1px rgba(255,255,255,.03) inset; }
+  .screen { border-radius:26px; background:var(--bg); padding:18px 14px; }
+  .s-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+  .s-lab { font-size:9px; letter-spacing:.1em; color:var(--t3); font-weight:700; }
+  .s-h { color:var(--t1); font-weight:600; font-size:16px; }
+  .badge { border:1px solid var(--yellow); background:#3d2e0a; color:var(--yellow); border-radius:8px; padding:4px 9px; text-align:center; font-weight:800; line-height:1; }
+  .badge small { display:block; font-size:7px; letter-spacing:.1em; margin-top:3px; }
+  .bar { height:5px; border-radius:5px; background:var(--raised); overflow:hidden; margin-bottom:14px; } .bar i { display:block; height:100%; width:62%; background:var(--yellow); }
+  .grid6 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tile { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px; font-size:11px; color:var(--t1); }
+  .tile .sc { float:right; font-weight:700; }
+  .meter { height:3px; border-radius:3px; background:var(--raised); margin-top:7px; } .meter i { display:block; height:100%; border-radius:3px; }
+  section { padding:64px 0; border-top:1px solid var(--border); }
+  h2 { color:var(--t1); font-size:clamp(26px,3.4vw,36px); letter-spacing:-.8px; line-height:1.15; margin:0 0 10px; }
+  .sub { max-width:600px; margin:0 0 32px; }
+  .features { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .feature { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .feature svg { width:26px; height:26px; color:var(--blue2); }
+  .feature h3 { color:var(--t1); font-size:17px; margin:12px 0 6px; }
+  .feature p { margin:0; font-size:14.5px; }
+  .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; counter-reset:s; }
+  .step { position:relative; padding:22px 22px 22px 66px; background:var(--surface); border:1px solid var(--border); border-radius:14px; }
+  .step::before { counter-increment:s; content:counter(s); position:absolute; left:20px; top:20px; width:32px; height:32px; border-radius:50%; background:rgba(56,139,253,.15); color:var(--blue2); font-weight:700; display:grid; place-items:center; }
+  .step h3 { color:var(--t1); font-size:16px; margin:0 0 4px; } .step p { margin:0; font-size:14.5px; }
+  .book { display:grid; grid-template-columns:180px 1fr; gap:36px; align-items:center; }
+  .book img { width:180px; border-radius:6px; box-shadow:0 20px 50px rgba(0,0,0,.5); }
+  .final { text-align:center; }
+  footer { border-top:1px solid var(--border); padding:24px 0 40px; font-size:13px; color:var(--t3); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  footer a { color:var(--t2); }
+  @media (max-width:860px) {
+    .hero { grid-template-columns:1fr; padding:36px 0 56px; gap:40px; }
+    .features, .steps { grid-template-columns:1fr; }
+    .book { grid-template-columns:1fr; } .book img { width:150px; }
+  }
+</style>
+</head>
+<body>
+<div class="preview-bar">Preview, not live ·
+  <a href="/previews/home-a.html" aria-current="page">A: Landing page</a>
+  <a href="/previews/home-b.html">B: Minimal</a>
+  <a href="/previews/home-c.html">C: Split screen</a>
+</div>
+
+<div class="wrap">
+  <header>
+    <a class="brand" href="#"><img src="/logo-mark.svg" width="30" height="30" alt=""><span>Life<b>SOC</b></span></a>
+    <a class="btn btn-ghost" href="#signin">Sign in</a>
+  </header>
+
+  <div class="hero">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>The companion app to <em style="font-style:italic">Zero Trust</em></span>
+      <h1>Run your life like a <em>security operations centre</em>.</h1>
+      <p class="lead">Score the six domains of your life, log what goes wrong, patch what's weak, and get a second opinion from an AI analyst trained on the book's framework.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#signin">Create free account</a>
+        <a class="btn btn-ghost" href="#how">How book access works</a>
+      </div>
+      <p class="fine">Sign in with Google or email. Your journal stays on your device.</p>
+    </div>
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <div class="s-top"><div><div class="s-lab">LIFESOC</div><div class="s-h">Security Posture</div></div><div class="badge">6<small>ELEVATED</small></div></div>
+        <div class="bar"><i></i></div>
+        <div class="grid6">
+          <div class="tile">🤝 Relationships<span class="sc" style="color:var(--green)">8</span><div class="meter"><i style="width:80%;background:var(--green)"></i></div></div>
+          <div class="tile">💰 Finances<span class="sc" style="color:var(--yellow)">5</span><div class="meter"><i style="width:50%;background:var(--yellow)"></i></div></div>
+          <div class="tile">🧭 Career<span class="sc" style="color:var(--green)">7</span><div class="meter"><i style="width:70%;background:var(--green)"></i></div></div>
+          <div class="tile">❤️ Health<span class="sc" style="color:var(--red)">3</span><div class="meter"><i style="width:30%;background:var(--red)"></i></div></div>
+          <div class="tile">🔑 Reputation<span class="sc" style="color:var(--green)">8</span><div class="meter"><i style="width:80%;background:var(--green)"></i></div></div>
+          <div class="tile">🧠 Mental<span class="sc" style="color:var(--yellow)">5</span><div class="meter"><i style="width:50%;background:var(--yellow)"></i></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>Everything a SOC has, pointed at your life</h2>
+    <p class="sub">The tools security teams use to defend networks, translated into a personal practice.</p>
+    <div class="features">
+      <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><h3>Posture dashboard</h3><p>Score relationships, finances, career, health, reputation and mental resilience, and see your overall threat level.</p></div>
+      <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><h3>Vulnerabilities &amp; patches</h3><p>Keep a register of personal weak points and track the fixes, so nothing stays open for long.</p></div>
+      <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg><h3>Incident log</h3><p>When something goes wrong, log it, contain it and write down what you learned.</p></div>
+      <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><h3>IoC Scanner</h3><p>Describe a situation and get the warning signs ("indicators of compromise") spotted for you.</p></div>
+      <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><h3>AI Analyst</h3><p>Talk a problem through with an analyst grounded in the book's Zero Trust framework.</p></div>
+      <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><h3>Ebook &amp; audiobook</h3><p>Read or listen to <em>Zero Trust</em> inside the app, with your place saved.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How book access works</h2>
+    <p class="sub">LifeSOC comes with the book. Your copy unlocks a year of full access.</p>
+    <div class="steps">
+      <div class="step"><h3>Create an account</h3><p>Sign in with Google, or with your email and a password.</p></div>
+      <div class="step"><h3>Enter your book code</h3><p>Find the access code in your copy and answer one quick question from the book.</p></div>
+      <div class="step"><h3>Unlock everything</h3><p>The tools, AI Analyst, ebook and audiobook are yours for 12 months.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap book">
+    <img src="/book-cover.jpeg" alt="Zero Trust book cover">
+    <div>
+      <h2>Built on <em style="font-style:italic">Zero Trust</em> by Tosin Omojola</h2>
+      <p class="sub" style="margin-bottom:20px">Security teams stopped assuming anything inside the walls was safe. The book applies that thinking to everyday life: verify, limit the blast radius, and keep watching.</p>
+      <a class="btn btn-ghost" href="#">About the book</a>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="signin">
+  <div class="wrap">
+    <h2>Ready to check your posture?</h2>
+    <p class="sub" style="margin:0 auto 24px">It takes a minute to set up.</p>
+    <div class="cta" style="justify-content:center">
+      <a class="btn btn-primary" href="#">Create free account</a>
+      <a class="btn btn-ghost" href="#">Sign in</a>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer><span>© 2026 Tosin Omojola</span><span><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a></span></footer>
+</div>
+</body>
+</html>
