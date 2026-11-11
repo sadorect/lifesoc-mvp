@@ -5,10 +5,12 @@ import { fromNodeHeaders } from 'better-auth/node'
 import { auth } from './_auth-server.js'
 import { db } from './_db.js'
 import { expiryOf, statusOf } from './_entitlement.js'
-import { getAllSettings, setSettings } from './_settings.js'
+import QRCode from 'qrcode'
+import { getAllSettings, setSettings, cleanUrl } from './_settings.js'
 import { listReviewers, redeemersOf, addReviewer, setReviewerRevoked, normalize } from './_reviewers.js'
 
 const DAY = 24 * 60 * 60 * 1000
+const publicBase = () => (process.env.BETTER_AUTH_URL || 'https://www.lifesoc.app').replace(/\/$/, '')
 const admins = () => String(process.env.ADMIN_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 
 export async function getAdmin(req) {
@@ -50,6 +52,7 @@ router.get('/overview', (req, res) => {
     active7: count('SELECT count(DISTINCT userId) n FROM session WHERE updatedAt >= ?', since(7)),
     chat7: count("SELECT count(*) n FROM usage_event WHERE kind = 'chat' AND at >= ?", since(7)),
     scan7: count("SELECT count(*) n FROM usage_event WHERE kind = 'scan' AND at >= ?", since(7)),
+    book7: count("SELECT count(*) n FROM usage_event WHERE kind = 'book' AND at >= ?", since(7)),
     expiringSoon: ents.filter((e, i) => statuses[i] === 'active' && expiryOf(e) && expiryOf(e) - now < 30 * DAY).length,
   }
   // 30 daily buckets (UTC dates), oldest first.
@@ -188,7 +191,25 @@ for (const op of ['revoke', 'restore']) {
 }
 
 // ── Settings ────────────────────────────────────────────────────────────────
-router.get('/settings', (req, res) => res.json({ settings: getAllSettings(), envBookCodeSet: !!process.env.BOOK_ACCESS_CODE }))
+router.get('/settings', (req, res) => res.json({
+  settings: getAllSettings(),
+  envBookCodeSet: !!process.env.BOOK_ACCESS_CODE,
+  bookLink: `${publicBase()}/book`,
+  bookVisits: {
+    d7: db.prepare("SELECT count(*) n FROM usage_event WHERE kind = 'book' AND at >= ?").get(new Date(Date.now() - 7 * DAY).toISOString()).n,
+    total: db.prepare("SELECT count(*) n FROM usage_event WHERE kind = 'book'").get().n,
+  },
+}))
+
+// QR code for the public /book link (it never changes, so printed codes keep working
+// whatever destination is set). ?format=png|svg
+router.get('/book-qr', wrap(async (req, res) => {
+  const link = `${publicBase()}/book`
+  const opts = { errorCorrectionLevel: 'M', margin: 2, color: { dark: '#0d1117', light: '#ffffff' } }
+  res.setHeader('Content-Disposition', `attachment; filename="lifesoc-book-qr.${req.query.format === 'svg' ? 'svg' : 'png'}"`)
+  if (req.query.format === 'svg') return res.type('image/svg+xml').send(await QRCode.toString(link, { ...opts, type: 'svg' }))
+  res.type('image/png').send(await QRCode.toBuffer(link, { ...opts, width: 1024 }))
+}))
 
 router.put('/settings', (req, res) => {
   const b = req.body ?? {}
@@ -196,6 +217,7 @@ router.put('/settings', (req, res) => {
   if ('signups_paused' in b) next.signups_paused = b.signups_paused ? '1' : '0'
   if ('announcement' in b) next.announcement = String(b.announcement ?? '').trim().slice(0, 300)
   if ('book_access_code' in b) next.book_access_code = String(b.book_access_code ?? '').trim().slice(0, 60)
+  if ('book_url' in b) next.book_url = cleanUrl(b.book_url)
   setSettings(next)
   log(req, 'settings.update', null, { ...next, ...(next.book_access_code ? { book_access_code: '(changed)' } : {}) })
   res.json({ settings: getAllSettings() })

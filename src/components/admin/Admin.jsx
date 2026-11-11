@@ -88,6 +88,7 @@ function Overview() {
     ['New sign-ups', t.signups7, `last 7 days · ${t.signups30} in 30`],
     ['Active readers', t.active7, 'signed in, last 7 days'],
     ['AI requests', t.chat7 + t.scan7, `last 7 days · ${t.chat7} Analyst, ${t.scan7} Scanner`],
+    ['Book link visits', t.book7, 'lifesoc.app/book, last 7 days'],
   ]
   return (
     <>
@@ -326,8 +327,14 @@ function Reviewers({ notify }) {
 function Settings({ notify }) {
   const [s, setS] = useState(null)
   const [envCode, setEnvCode] = useState(false)
+  const [book, setBook] = useState({ link: '', visits: { d7: 0, total: 0 } })
   const [saving, setSaving] = useState(false)
-  useEffect(() => { api('/settings').then((d) => { setS({ ...d.settings, signups_paused: d.settings.signups_paused === '1' }); setEnvCode(d.envBookCodeSet) }).catch((e) => notify(e.message, 'err')) }, [notify])
+  useEffect(() => {
+    api('/settings').then((d) => {
+      setS({ ...d.settings, signups_paused: d.settings.signups_paused === '1' }); setEnvCode(d.envBookCodeSet)
+      setBook({ link: d.bookLink, visits: d.bookVisits })
+    }).catch((e) => notify(e.message, 'err'))
+  }, [notify])
   if (!s) return <p style={S.muted}>Loading…</p>
 
   const save = async (e) => {
@@ -343,6 +350,29 @@ function Settings({ notify }) {
           <span><span style={S.h3}>Pause new sign-ups</span><span style={{ ...S.muted, display: 'block' }}>Nobody can create a new account (email or Google). Existing readers can still sign in.</span></span>
           <input type="checkbox" checked={s.signups_paused} onChange={(e) => setS({ ...s, signups_paused: e.target.checked })} style={{ width: 22, height: 22, flexShrink: 0 }} />
         </label>
+      </div>
+      <div style={S.card}>
+        <label style={{ display: 'block' }}>
+          <span style={S.h3}>Book purchase link</span>
+          <span style={{ ...S.muted, display: 'block', marginBottom: 8 }}>
+            Where <b style={{ color: 'var(--text-1)' }}>{book.link.replace(/^https:\/\//, '')}</b> sends people, for example your Amazon listing.
+            Print the QR code below once: it always points at /book, so you can change the destination here at any time.
+          </span>
+          <input type="url" inputMode="url" value={s.book_url} onChange={(e) => setS({ ...s, book_url: e.target.value })} style={{ ...S.input, width: '100%' }} placeholder="https://www.amazon.co.uk/dp/…" autoComplete="off" />
+        </label>
+        {!s.book_url && <p style={{ ...S.muted, marginTop: 8 }}>Not set yet: /book currently opens the LifeSOC home page.</p>}
+        <div style={S.qrRow}>
+          <img src="/api/admin/book-qr?format=png" alt={`QR code for ${book.link}`} width="132" height="132" style={S.qr} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <a href="/api/admin/book-qr?format=png" style={{ ...S.smallBtn, textDecoration: 'none' }}>Download PNG</a>
+              <a href="/api/admin/book-qr?format=svg" style={{ ...S.smallBtn, textDecoration: 'none' }}>Download SVG (print)</a>
+              <button type="button" style={S.smallBtn} onClick={() => navigator.clipboard?.writeText(book.link).then(() => notify('Link copied'))}>Copy link</button>
+              <a href="/book" target="_blank" rel="noopener" style={{ ...S.smallBtn, textDecoration: 'none' }}>Test link ↗</a>
+            </div>
+            <span style={S.muted}>{book.visits.d7} visits in the last 7 days · {book.visits.total} in total</span>
+          </div>
+        </div>
       </div>
       <div style={S.card}>
         <label style={{ display: 'block' }}>
@@ -419,6 +449,8 @@ const S = {
   actions: { display: 'flex', flexWrap: 'wrap', gap: 8 },
   created: { marginTop: 4, padding: 12, borderRadius: 8, background: 'var(--green-dim)', color: 'var(--text-1)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   code: { fontFamily: 'var(--mono)', fontSize: 13, background: 'var(--bg-raised)', padding: '3px 7px', borderRadius: 6, color: 'var(--text-1)' },
+  qrRow: { display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, flexWrap: 'wrap' },
+  qr: { borderRadius: 8, background: '#fff', padding: 4, flexShrink: 0 },
   switchRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, cursor: 'pointer' },
   toast: { position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)', background: 'var(--bg-raised)', border: '1px solid var(--border-hi)', color: 'var(--text-1)', padding: '10px 16px', borderRadius: 10, fontSize: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.4)', zIndex: 20, maxWidth: 'calc(100vw - 32px)' },
   toastErr: { borderColor: 'var(--red)', color: 'var(--red)' },

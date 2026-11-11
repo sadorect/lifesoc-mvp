@@ -10,6 +10,7 @@ import { toNodeHandler } from 'better-auth/node'
 import { auth, googleEnabled } from '../api/_auth-server.js'
 import adminRouter from '../api/admin.js'
 import { getSetting, signupsPaused } from '../api/_settings.js'
+import { logUsage } from '../api/_usage.js'
 
 import chat from '../api/chat.js'
 import scan from '../api/scan.js'
@@ -86,6 +87,17 @@ app.use(express.static(dist, {
     else res.setHeader('Cache-Control', 'public, max-age=3600')
   },
 }))
+
+// /book: the link printed in QR codes. Redirects to the purchase page set in the
+// admin (Settings → Book purchase link). 302 + no-store so changing the
+// destination takes effect immediately, even for people who scanned before.
+app.get(['/book', '/book/'], (req, res) => {
+  const dest = getSetting('book_url')
+  logUsage(null, 'book')
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('X-Robots-Tag', 'noindex')
+  res.redirect(302, dest || '/')
+})
 
 // Legal pages: static files with clean URLs (also in the service worker's denylist).
 for (const page of ['privacy', 'terms']) {
