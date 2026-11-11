@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getDomains, updateDomain } from '../lib/db.js'
 import { useSession, signOut } from '../lib/auth-client.js'
 import LegalLinks from './LegalLinks.jsx'
+import InstallButton from './InstallButton.jsx'
 import { TalkButton, useMessages } from './Messages.jsx'
 
 const SEVERITY_COLOR = score =>
@@ -124,6 +125,7 @@ export default function Dashboard({ onNavigate }) {
           {session?.user?.email}
         </span>
         <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <InstallButton className="btn btn-ghost" label="Install" style={{ padding: '6px 12px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }} />
           {isAdmin && <a className="btn btn-ghost" href="/admin" style={{ padding: '6px 12px', fontSize: 13, textDecoration: 'none' }}>Admin</a>}
           <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => signOut()}>
             Sign out

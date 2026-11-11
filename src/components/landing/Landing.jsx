@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import InstallButton from '../InstallButton.jsx'
 import { signIn, signUp, requestPasswordReset, resetPassword, getAuthConfig } from '../../lib/auth-client.js'
 import Announcement from '../Announcement.jsx'
 import './landing.css'
@@ -109,6 +110,7 @@ export default function Landing({ site = {} }) {
         <div className="lnd-triggers">
           <button className="lnd-trig primary" onClick={(e) => { e.stopPropagation(); open('auth') }}>Enter the SOC <span className="lnd-k">E</span></button>
           <button className="lnd-trig" onClick={(e) => { e.stopPropagation(); open('dossier') }}>Open the dossier <span className="lnd-k">D</span></button>
+          <InstallButton className="lnd-trig" />
         </div>
         <div className="lnd-hint">// hover the radar · press E to enter · D for the book</div>
       </div>
